@@ -167,6 +167,24 @@ def run_simulation():
         print("   * Marcus's screen rolled back to previous state")
         print("   * Red Toast Notification displayed to user without crashing UI!")
 
+    # =========================================================================
+    # 5. UNIFIED RAISED TICKETS QUEUE OBSERVATION (`v_raised_tickets_queue`)
+    # =========================================================================
+    print_header("5. Unified Raised Tickets Queue Observation (v_raised_tickets_queue)")
+    
+    cursor.execute("""
+        SELECT ticket_id, ticket_type, priority, asset_tag, SUBSTR(summary, 1, 35) AS short_summary, status
+        FROM v_raised_tickets_queue
+        ORDER BY raised_date DESC
+        LIMIT 5;
+    """)
+    rows = cursor.fetchall()
+    print(f"{'TICKET ID':<10} | {'TYPE':<12} | {'PRIORITY':<10} | {'ASSET TAG':<12} | {'SUMMARY / ISSUE':<35} | {'STATUS'}")
+    print("-" * 95)
+    for r in rows:
+        t_id, t_type, prio, tag, summary, status = r
+        print(f"{t_id:<10} | {t_type:<12} | {prio:<10} | {tag:<12} | {summary:<35} | {status}")
+
     conn.close()
     print("\n" + "="*80)
     print(" [COMPLETE] SIMULATION COMPLETE - ASSETFLOW ERP ENGINE IS 100% VERIFIED AND READY")
