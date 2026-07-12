@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AssetFlow · Enterprise Prototype & Live Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5F7;
+    --surface:#FFFFFF;
+    --surface-alt:#EBEFF2;
+    --border:#DEE3E8;
+    --border-strong:#C7CED6;
+    --text:#1B232B;
+    --text-secondary:#5C6773;
+    --text-muted:#8B95A1;
+    --accent:#1B6E68;
+    --accent-dark:#0F4A46;
+    --accent-light:#DDEFEC;
+    --accent-text:#0F4A46;
+    --warning:#9A6400;
+    --warning-bg:#FCF0D6;
+    --danger:#B3261E;
+    --danger-bg:#FBE7E5;
+    --success:#1E7145;
+    --success-bg:#E4F2E8;
+    --radius:8px;
+    --sidebar-w:236px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); font-size:14px;}
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:13px;}
+
+  /* ---------- Login screen ---------- */
+  #login-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg,#12312E 0%, #0F4A46 55%, #1B6E68 100%);
+  }
+  .login-card{
+    width:380px; background:var(--surface); border-radius:14px; padding:2.25rem 2rem;
+    box-shadow:0 20px 60px rgba(15,74,70,0.35);
+  }
+  .login-logo{display:flex; align-items:center; gap:10px; margin-bottom:1.75rem;}
+  .login-logo .mark{width:30px; height:30px; border-radius:8px; background:var(--accent); position:relative; flex:none;}
+  .login-logo .mark::after{content:''; position:absolute; top:8px; left:6px; width:18px; height:3px; background:#fff; border-radius:2px; box-shadow:0 6px 0 #fff, 0 -6px 0 rgba(255,255,255,0.5);}
+  .login-logo span{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:19px;}
+  .field{margin-bottom:1rem;}
+  .field label{display:block; font-size:12px; color:var(--text-secondary); margin-bottom:5px;}
+  .field input, .field select{
+    width:100%; height:38px; border:1px solid var(--border-strong); border-radius:var(--radius);
+    padding:0 12px; background:#fff; color:var(--text);
+  }
+  .field input:focus, .field select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-light);}
+  .btn{
+    border:1px solid var(--border-strong); background:#fff; border-radius:var(--radius);
+    padding:0 16px; height:36px; font-size:13px; font-weight:500; color:var(--text);
+  }
+  .btn:hover{background:var(--surface-alt);}
+  .btn-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-block{width:100%; height:40px;}
+  .btn-danger{border-color:var(--danger); color:var(--danger);}
+  .link-row{display:flex; justify-content:space-between; margin-top:14px; font-size:12px;}
+  .link-row a{color:var(--accent-text); text-decoration:none; cursor:pointer;}
+  .note-box{background:var(--accent-light); border-radius:var(--radius); padding:10px 12px; font-size:12px; color:var(--accent-text); margin-top:1.25rem; line-height:1.5;}
+
+  /* ---------- App shell ---------- */
+  #app-screen{display:none; min-height:100vh;}
+  .shell{display:grid; grid-template-columns:var(--sidebar-w) 1fr; min-height:100vh;}
+  .sidebar{
+    background:#0F1E1C; color:#DCE7E5; padding:1.25rem 0.9rem; position:sticky; top:0; height:100vh;
+    display:flex; flex-direction:column;
+  }
+  .sidebar .login-logo span{color:#fff;}
+  .sidebar-scroll{overflow-y:auto; margin-top:1.5rem; flex:1;}
+  .nav-group-label{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:#6E8582; margin:14px 10px 6px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:#B9CBC8;
+    font-size:13px; margin-bottom:2px; cursor:pointer; border:1px solid transparent;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.06);}
+  .nav-item.active{background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.08);}
+  .nav-item svg{flex:none; opacity:0.85;}
+  .nav-item.hidden-role{display:none;}
+  .sidebar-foot{font-size:11px; color:#5E7573; padding:10px; border-top:1px solid rgba(255,255,255,0.08); margin-top:8px;}
+
+  .main{display:flex; flex-direction:column; min-width:0;}
+  .topbar{
+    height:60px; background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; position:sticky; top:0; z-index:5;
+  }
+  .topbar-title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px;}
+  .topbar-right{display:flex; align-items:center; gap:14px;}
+  .role-pill{font-size:12px; border:1px solid var(--border-strong); border-radius:var(--radius); padding:5px 10px; background:#fff; font-weight:600; color:var(--accent-dark);}
+  .avatar{width:30px; height:30px; border-radius:50%; background:var(--accent-light); color:var(--accent-text); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;}
+  .bell-wrap{position:relative;}
+  .bell-dot{position:absolute; top:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:var(--danger); border:2px solid var(--surface);}
+
+  .content{padding:1.75rem 2rem 3rem; flex:1;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .view-header{margin-bottom:1.25rem;}
+  .view-header h1{font-size:21px; font-weight:600; margin:0 0 4px;}
+  .view-header p{font-size:13px; color:var(--text-secondary); margin:0;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.25rem;}
+  .grid{display:grid; gap:14px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+
+  .kpi .num{font-size:24px; font-weight:600; font-family:'Space Grotesk',sans-serif;}
+  .kpi .label{font-size:12px; color:var(--text-secondary); margin-bottom:6px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; font-weight:500; color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.03em; padding:8px 10px; border-bottom:1px solid var(--border);}
+  td{padding:10px 10px; border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  tr.clickable:hover{background:var(--surface-alt); cursor:pointer;}
+
+  .badge{display:inline-block; font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500;}
+  .badge-accent{background:var(--accent-light); color:var(--accent-text);}
+  .badge-warning{background:var(--warning-bg); color:var(--warning);}
+  .badge-danger{background:var(--danger-bg); color:var(--danger);}
+  .badge-success{background:var(--success-bg); color:var(--success);}
+  .badge-gray{background:var(--surface-alt); color:var(--text-secondary);}
+
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:1.1rem;}
+  .tab{padding:9px 4px; margin-right:18px; font-size:13px; color:var(--text-secondary); border-bottom:2px solid transparent; cursor:pointer;}
+  .tab.active{color:var(--text); border-color:var(--accent); font-weight:500;}
+
+  .flow{display:flex; align-items:center; gap:0; flex-wrap:wrap;}
+  .flow-node{display:flex; align-items:center; gap:6px;}
+  .flow-dot{width:9px; height:9px; border-radius:50%; background:var(--border-strong);}
+  .flow-dot.done{background:var(--accent);}
+  .flow-dot.current{background:var(--accent); box-shadow:0 0 0 4px var(--accent-light);}
+  .flow-label{font-size:11px; color:var(--text-muted); margin-right:14px;}
+  .flow-label.on{color:var(--text); font-weight:500;}
+  .flow-line{width:24px; height:1px; background:var(--border-strong); margin-right:14px;}
+  .flow-line.done{background:var(--accent);}
+
+  .toolbar{display:flex; gap:8px; margin-bottom:14px; align-items:center;}
+  .toolbar input, .toolbar select{height:34px; border:1px solid var(--border-strong); border-radius:var(--radius); padding:0 10px; background:#fff;}
+  .search-input{flex:1; max-width:280px;}
+  .spacer{flex:1;}
+
+  .section-title{font-size:14px; font-weight:600; margin:0 0 10px;}
+  .muted{color:var(--text-secondary);}
+  .small{font-size:12px;}
+  .callout{border-radius:var(--radius); padding:10px 12px; font-size:13px;}
+  .callout-danger{background:var(--danger-bg); color:var(--danger); border:1px solid #F3C9C6;}
+  .callout-success{background:var(--success-bg); color:var(--success); border:1px solid #C6E4CE;}
+  .callout-warning{background:var(--warning-bg); color:var(--warning); border:1px solid #F3DFA6;}
+
+  .booking-track{position:relative; height:56px; background:var(--surface-alt); border-radius:var(--radius); margin:10px 0 22px;}
+  .booking-block{position:absolute; top:6px; bottom:6px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500;}
+  .timeline-tick{position:absolute; bottom:-18px; font-size:11px; color:var(--text-muted);}
+
+  .divider{border:none; border-top:1px solid var(--border); margin:1.1rem 0;}
+  .list-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);}
+  .list-row:last-child{border-bottom:none;}
+
+  .bar-chart{display:flex; align-items:flex-end; gap:10px; height:140px; padding-top:10px;}
+  .bar{flex:1; background:var(--accent); border-radius:5px 5px 0 0; position:relative; display:flex; align-items:flex-end; justify-content:center;}
+  .bar span{position:absolute; top:-18px; font-size:11px; color:var(--text-secondary);}
+  .bar-label{text-align:center; font-size:11px; color:var(--text-secondary); margin-top:6px;}
+
+  .status-badge-live{background:#DDEFEC; color:#0F4A46; border:1px solid #1B6E68; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600;}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><div class="mark"></div><span>AssetFlow</span></div>
+    <div id="login-mode-signin">
+      <div class="field"><label>Work email</label><input type="text" id="login-email" value="priya.nair@company.com"></div>
+      <div class="field"><label>Password</label><input type="password" value="••••••••"></div>
+      <button class="btn btn-primary btn-block" onclick="enterApp()">Sign in</button>
+      <div class="link-row">
+        <a onclick="toggleSignup(true)">Create an account</a>
+        <a onclick="alert('Password reset link sent to registered email.')">Forgot password?</a>
+      </div>
+    </div>
+    <div id="login-mode-signup" style="display:none;">
+      <div class="field"><label>Full name</label><input type="text" placeholder="Jordan Blake"></div>
+      <div class="field"><label>Work email</label><input type="text" placeholder="name@company.com"></div>
+      <div class="field"><label>Password</label><input type="password" placeholder="Create a password"></div>
+      <button class="btn btn-primary btn-block" onclick="enterApp()">Create employee account</button>
+      <div class="link-row"><a onclick="toggleSignup(false)">Back to sign in</a><span></span></div>
+    </div>
+    <div class="note-box">Signup only creates a standard employee account. Department head and asset manager roles are granted later by an admin from the employee directory — nobody can self-assign a role.</div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="app-screen">
+<div class="shell">
+  <div class="sidebar">
+    <div class="login-logo"><div class="mark"></div><span>AssetFlow</span></div>
+    <div class="sidebar-scroll">
+      <div class="nav-group-label">Overview</div>
+      <div class="nav-item active" data-view="dashboard" onclick="goTo('dashboard')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-group-label">Manage</div>
+      <div class="nav-item role-admin" data-view="org" onclick="goTo('org')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="5" cy="5" r="2" stroke="currentColor"/><circle cx="11" cy="5" r="2" stroke="currentColor"/><path d="M2 14c0-2.2 1.3-4 3-4s3 1.8 3 4M8 14c0-2.2 1.3-4 3-4s3 1.8 3 4" stroke="currentColor"/></svg>
+        Organization setup
+      </div>
+      <div class="nav-item" data-view="assets" onclick="goTo('assets')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 5l7-3 7 3-7 3-7-3z" stroke="currentColor"/><path d="M1 5v6l7 3 7-3V5" stroke="currentColor"/></svg>
+        Asset directory
+      </div>
+      <div class="nav-item" data-view="allocation" onclick="goTo('allocation')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5h9M11 5l-2.5-2.5M11 5l-2.5 2.5" stroke="currentColor"/><path d="M14 11H5M5 11l2.5-2.5M5 11l2.5 2.5" stroke="currentColor"/></svg>
+        Allocation & transfer
+      </div>
+      <div class="nav-item" data-view="booking" onclick="goTo('booking')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="1.5" stroke="currentColor"/><path d="M1.5 6h13M4.5 1v3M11.5 1v3" stroke="currentColor"/></svg>
+        Resource booking
+      </div>
+      <div class="nav-item" data-view="maintenance" onclick="goTo('maintenance')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9.5 2.5a3 3 0 00-3.9 3.9L2 10l2 2 3.6-3.6a3 3 0 003.9-3.9L10 6 8 8l-2-2 2-2 1.5-1.5z" stroke="currentColor" stroke-linejoin="round"/></svg>
+        Maintenance
+      </div>
+      <div class="nav-item" data-view="audit" onclick="goTo('audit')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor"/></svg>
+        Asset audits
+      </div>
+      <div class="nav-group-label">Insights</div>
+      <div class="nav-item" data-view="reports" onclick="goTo('reports')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14V8M7 14V4M12 14v-6" stroke="currentColor"/><path d="M1.5 14.5h13" stroke="currentColor"/></svg>
+        Reports & analytics
+      </div>
+      <div class="nav-item" data-view="activity" onclick="goTo('activity')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6a4 4 0 018 0c0 3 1 4 1 4H3s1-1 1-4z" stroke="currentColor"/><path d="M6.5 12a1.5 1.5 0 003 0" stroke="currentColor"/></svg>
+        Activity & notifications
+      </div>
+      <div class="nav-group-label" style="color:var(--accent-light);">Studio & Debug</div>
+      <div class="nav-item" onclick="window.open('/studio', '_blank')" style="background:rgba(27,110,104,0.2); border-color:#1B6E68; color:#fff;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 8h12M2 13h12" stroke="currentColor"/></svg>
+        ⚡ Raw SQL Studio
+      </div>
+    </div>
+    <div class="sidebar-foot">Signed in as <span id="sidebar-role-name">Priya Nair</span></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <span class="status-badge-live">⚡ Live Connected: <code>assetflow_local.db</code></span>
+      </div>
+      <div class="topbar-right">
+        <select class="role-pill" id="roleSwitcher" onchange="setRole(this.value)">
+          <option value="admin">Viewing as: Admin (Priya Nair)</option>
+          <option value="manager">Viewing as: Asset manager (Anita Desai)</option>
+          <option value="head">Viewing as: Department head (Sam Lee)</option>
+          <option value="employee">Viewing as: Employee (Jordan Blake / usr-02)</option>
+        </select>
+        <div class="bell-wrap" onclick="goTo('activity')" style="cursor:pointer;">
+          <svg width="19" height="19" viewBox="0 0 16 16" fill="none"><path d="M4 6a4 0 018 0c0 3 1 4 1 4H3s1-1 1-4z" stroke="var(--text-secondary)"/><path d="M6.5 12a1.5 1.5 0 003 0" stroke="var(--text-secondary)"/></svg>
+          <div class="bell-dot"></div>
+        </div>
+        <div class="avatar" id="topbar-avatar">PN</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="view active" id="view-dashboard">
+        <div class="view-header">
+          <h1 id="welcome-heading">Good morning, Priya</h1>
+          <p>Here's what's moving across the org today synced from PostgreSQL engine.</p>
+        </div>
+        <div class="grid grid-4" style="margin-bottom:16px;">
+          <div class="card kpi"><div class="label">Assets available</div><div class="num" id="kpi-avail">--</div></div>
+          <div class="card kpi"><div class="label">Assets allocated</div><div class="num" id="kpi-alloc">--</div></div>
+          <div class="card kpi"><div class="label">Under maintenance</div><div class="num" id="kpi-maint">--</div></div>
+          <div class="card kpi"><div class="label">Total registry</div><div class="num" id="kpi-total">--</div></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="section-title">Overdue returns & Critical flags</div>
+            <div id="overdue-list">
+              <div class="list-row"><div><b>AF-0114</b> · Dell laptop <div class="small muted">Priya Nair · Engineering</div></div><span class="badge badge-danger">4 days overdue</span></div>
+              <div class="list-row"><div><b>AF-0330</b> · Projector <div class="small muted">Marketing dept</div></div><span class="badge badge-danger">1 day overdue</span></div>
+              <div class="list-row"><div><b>AF-0092</b> · Company vehicle <div class="small muted">Facilities</div></div><span class="badge badge-danger">7 days overdue</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">Upcoming returns & bookings</div>
+            <div id="upcoming-list">
+              <div class="list-row"><div>Room B2 booking <div class="small muted">Today, 3:00–4:00 PM</div></div><span class="badge badge-accent">Upcoming</span></div>
+              <div class="list-row"><div>AF-0221 expected return <div class="small muted">Tomorrow</div></div><span class="badge badge-gray">Due soon</span></div>
+              <div class="list-row"><div>Delivery van booking <div class="small muted">Fri, 9:00 AM</div></div><span class="badge badge-accent">Upcoming</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="section-title" style="margin-top:20px;">Quick actions</div>
+        <div class="grid grid-3">
+          <button class="btn" style="height:44px;" onclick="goTo('assets')">Register asset</button>
+          <button class="btn" style="height:44px;" onclick="goTo('booking')">Book resource</button>
+          <button class="btn" style="height:44px;" onclick="goTo('maintenance')">Raise maintenance request</button>
+        </div>
+      </div>
+
+      <!-- ===== ORG SETUP ===== -->
+      <div class="view" id="view-org">
+        <div class="view-header"><h1>Organization setup</h1><p>Master data that everything else depends on. Admin only.</p></div>
+        <div class="tabs">
+          <div class="tab active" data-org-tab="dept" onclick="setOrgTab('dept')">Departments</div>
+          <div class="tab" data-org-tab="cat" onclick="setOrgTab('cat')">Asset categories</div>
+          <div class="tab" data-org-tab="emp" onclick="setOrgTab('emp')">Employee directory</div>
+        </div>
+
+        <div class="org-panel" id="org-dept">
+          <div class="card">
+            <div class="toolbar"><div class="spacer"></div><button class="btn btn-primary" onclick="alert('New department form: Name, Cost Center Code & Parent Dept selection.')">Add department</button></div>
+            <table id="table-dept">
+              <thead><tr><th>Department</th><th>Head</th><th>Parent</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Engineering</td><td>Priya Nair</td><td>—</td><td><span class="badge badge-success">Active</span></td></tr>
+                <tr><td>Marketing</td><td>Sam Lee</td><td>—</td><td><span class="badge badge-success">Active</span></td></tr>
+                <tr><td>Facilities</td><td>Anita Desai</td><td>Operations</td><td><span class="badge badge-success">Active</span></td></tr>
+                <tr><td>Legacy Ops</td><td>—</td><td>Operations</td><td><span class="badge badge-gray">Inactive</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="org-panel" id="org-cat" style="display:none;">
+          <div class="card">
+            <div class="toolbar"><div class="spacer"></div><button class="btn btn-primary" onclick="alert('New category form: Name, Useful Life Months & Depreciation Type.')">Add category</button></div>
+            <table>
+              <thead><tr><th>Category</th><th>Custom fields</th><th>Assets</th></tr></thead>
+              <tbody>
+                <tr><td>Electronics</td><td>Warranty period, useful life (36m)</td><td>21</td></tr>
+                <tr><td>Furniture</td><td>Ergonomic rating, useful life (60m)</td><td>8</td></tr>
+                <tr><td>Vehicles</td><td>Registration no., insurance expiry</td><td>6</td></tr>
+                <tr><td>Rooms & spaces</td><td>Capacity, btree_gist overlap lock</td><td>5</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="org-panel" id="org-emp" style="display:none;">
+          <div class="card">
+            <div class="toolbar">
+              <input class="search-input" placeholder="Search employees...">
+              <div class="spacer"></div>
+              <button class="btn btn-primary" onclick="alert('Invite employee form: Name, Email & Initial Role.')">Invite employee</button>
+            </div>
+            <table>
+              <thead><tr><th>Name</th><th>Department</th><th>Role</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Priya Nair</td><td>Engineering</td><td><span class="badge badge-accent">Department head</span></td><td><span class="badge badge-success">Active</span></td><td><a class="small" onclick="alert('Role change form would open here.')">Change role</a></td></tr>
+                <tr><td>Raj Kumar</td><td>Engineering</td><td><span class="badge badge-gray">Employee</span></td><td><span class="badge badge-success">Active</span></td><td><a class="small" onclick="alert('Promote to Department head or Asset manager.')">Promote</a></td></tr>
+                <tr><td>Anita Desai</td><td>Facilities</td><td><span class="badge badge-accent">Asset manager</span></td><td><span class="badge badge-success">Active</span></td><td><a class="small" onclick="alert('Role change form would open here.')">Change role</a></td></tr>
+                <tr><td>Sam Lee</td><td>Marketing</td><td><span class="badge badge-accent">Department head</span></td><td><span class="badge badge-success">Active</span></td><td><a class="small" onclick="alert('Role change form would open here.')">Change role</a></td></tr>
+                <tr><td>Jordan Blake</td><td>Marketing</td><td><span class="badge badge-gray">Employee</span></td><td><span class="badge badge-gray">Inactive</span></td><td><a class="small" onclick="alert('Promote to Department head or Asset manager.')">Promote</a></td></tr>
+              </tbody>
+            </table>
+            <div class="callout callout-warning" style="margin-top:12px;">This is the only screen where roles are assigned. New signups always start as a plain employee.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ASSET DIRECTORY ===== -->
+      <div class="view" id="view-assets">
+        <div class="view-header"><h1>Asset directory</h1><p>Live synchronized from PostgreSQL database engine.</p></div>
+        <div class="card">
+          <div class="toolbar">
+            <input class="search-input" id="search-assets" placeholder="Search by tag, serial, or name..." onkeyup="filterAssets()">
+            <select id="filter-cat" onchange="filterAssets()"><option value="ALL">All categories</option><option value="CAT-COMP">Electronics (Computers)</option><option value="CAT-FURN">Furniture</option><option value="CAT-VEH">Vehicles</option></select>
+            <select id="filter-status" onchange="filterAssets()"><option value="ALL">All statuses</option><option value="Available">Available</option><option value="Allocated">Allocated</option><option value="Under Maintenance">Under maintenance</option></select>
+            <div class="spacer"></div>
+            <button class="btn btn-primary" onclick="alert('Register asset form: name, category, serial number, acquisition date & cost, condition, location, photos, bookable flag.')">Register asset</button>
+          </div>
+          <table id="table-assets">
+            <thead><tr><th>Tag</th><th>Name</th><th>Category</th><th>Location</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="tbody-assets">
+              <!-- Dynamically loaded from database -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" id="assetDetailCard" style="display:none; margin-top:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div class="section-title" id="detail-title" style="margin-bottom:2px;">AF-0114 · Dell laptop</div>
+              <div class="small muted" id="detail-sub">Serial: DL-778291XG · Acquired Jan 2024 · Chennai HQ</div>
+            </div>
+            <span class="badge badge-accent" id="detail-badge">Allocated</span>
+          </div>
+          <div class="divider"></div>
+          <div class="small muted" style="margin-bottom:8px;">Lifecycle & Status Transitions</div>
+          <div class="flow" id="assetFlow"></div>
+          <div class="divider"></div>
+          <div class="grid grid-2">
+            <div>
+              <div class="small muted" style="margin-bottom:8px;">Allocation history</div>
+              <div class="list-row small"><span>Priya Nair · Engineering</span><span class="muted">Active Check-Out</span></div>
+              <div class="list-row small"><span>Raj Kumar · Engineering</span><span class="muted">Previous Assignee</span></div>
+            </div>
+            <div>
+              <div class="small muted" style="margin-bottom:8px;">Maintenance history</div>
+              <div class="list-row small"><span>Battery replacement</span><span class="muted">Resolved, Jan 2026</span></div>
+              <div class="list-row small"><span>Screen repair</span><span class="muted">Resolved, Aug 2025</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ALLOCATION ===== -->
+      <div class="view" id="view-allocation">
+        <div class="view-header"><h1>Allocation & transfer</h1><p>Assign assets, with the atomic quick-scan check-out & check-in mutation engine.</p></div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+              <div style="font-weight:500;">Atomic Barcode Quick-Scan Check-Out / Check-In (`fn_quick_scan_asset`)</div>
+              <div class="small muted">Simulates barcode scanning tag instantly in a single database transaction.</div>
+            </div>
+            <span class="badge badge-accent">Live DB Engine</span>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex; gap:8px;">
+            <select id="alloc-tag" style="flex:1; height:36px; border:1px solid var(--border-strong); border-radius:var(--radius); padding:0 10px;">
+              <option value="AF-0010">AF-0010 · Dell XPS 15 OLED Laptop</option>
+              <option value="AF-0011">AF-0011 · Apple iPad Pro 12.9 (M2)</option>
+              <option value="AF-0101">AF-0101 · Herman Miller Aeron Chair</option>
+              <option value="AF-0201">AF-0201 · Cisco Catalyst 9300 Switch</option>
+            </select>
+            <select id="allocatee" style="flex:1; height:36px; border:1px solid var(--border-strong); border-radius:var(--radius); padding:0 10px;">
+              <option value="USR-001">Priya Sharma · Engineering</option>
+              <option value="USR-002">Marcus Vance · Operations</option>
+              <option value="USR-003">Elena Rostova · Design</option>
+            </select>
+            <button class="btn btn-primary" onclick="tryQuickScan()">Scan & Check-Out / Return</button>
+          </div>
+          <div id="allocResult" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="section-title" style="margin-top:20px;">Open transfer requests (`v_raised_tickets_queue`)</div>
+        <div class="card">
+          <table id="table-transfers">
+            <thead><tr><th>Asset</th><th>From / Requestor</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="tbody-transfers">
+              <tr><td class="mono">AF-0330</td><td>Marketing</td><td>Department restructuring</td><td><span class="badge badge-warning">Pending approval</span></td><td><button class="btn" style="height:28px; font-size:12px;" onclick="alert('Approved by department head. Asset re-allocated and history updated.')">Approve</button></td></tr>
+              <tr><td class="mono">AF-0057</td><td>Facilities</td><td>Project handover</td><td><span class="badge badge-success">Approved</span></td><td><span class="small muted">Completed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== BOOKING ===== -->
+      <div class="view" id="view-booking">
+        <div class="view-header"><h1>Resource booking</h1><p>Book shared resources by time slot, with automatic exclusion constraint (`btree_gist`) overlap validation.</p></div>
+        <div class="card">
+          <div class="toolbar"><select id="book-room"><option>Executive Boardroom A</option><option>Delivery van</option><option>Projector cart</option></select><div class="spacer"></div><span class="small muted">Today, 9:00 AM – 5:00 PM</span></div>
+          <div class="booking-track" id="bookingTrack">
+            <div class="booking-block badge-accent" style="left:20%; width:25%;">11:00–13:00 · Confirmed Booking</div>
+            <div class="timeline-tick" style="left:0%;">9:00</div>
+            <div class="timeline-tick" style="left:25%;">11:00</div>
+            <div class="timeline-tick" style="left:50%;">13:00</div>
+            <div class="timeline-tick" style="left:75%;">15:00</div>
+            <div class="timeline-tick" style="left:98%;">17:00</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; margin-top:26px;">
+            <label class="small muted">Start</label>
+            <input id="bookStart" type="text" value="11:30" style="width:70px; height:34px; border:1px solid var(--border-strong); border-radius:var(--radius); padding:0 8px;">
+            <label class="small muted">End</label>
+            <input id="bookEnd" type="text" value="12:30" style="width:70px; height:34px; border:1px solid var(--border-strong); border-radius:var(--radius); padding:0 8px;">
+            <button class="btn btn-primary" onclick="tryBook()">Request booking</button>
+          </div>
+          <div id="bookResult" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="section-title" style="margin-top:20px;">Your bookings (`resource_bookings`)</div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Resource</th><th>Time</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Executive Boardroom A</td><td>2026-07-15 14:00–16:00</td><td><span class="badge badge-accent">confirmed</span></td><td><a class="small" onclick="alert('Booking cancelled.')">Cancel</a></td></tr>
+              <tr><td>Delivery van</td><td>2026-07-18 09:00–12:00</td><td><span class="badge badge-accent">confirmed</span></td><td><a class="small" onclick="alert('Reschedule form would open here.')">Reschedule</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== MAINTENANCE ===== -->
+      <div class="view" id="view-maintenance">
+        <div class="view-header"><h1>Maintenance management</h1><p>Route repair work through approval and observe real-time resolution progress (`v_user_my_tickets_portal`).</p></div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div><div style="font-weight:500;">AF-0204 · Cisco Catalyst 9300 Fan Module 2 Failure Alarm</div><div class="small muted" id="maint-desc-live">Reported by Priya Sharma: motor/fan grinding and thermal warning</div></div>
+            <span class="badge badge-warning" id="maintAssetStatus">In progress (50%)</span>
+          </div>
+          <div class="divider"></div>
+          <div class="flow" id="maintFlow"></div>
+          <button class="btn" style="margin-top:16px;" onclick="advanceMaintenance()" id="maintBtn">Advance workflow stage</button>
+        </div>
+
+        <div class="section-title" style="margin-top:20px;">All active maintenance requests (`maintenance_requests`)</div>
+        <div class="card">
+          <table id="table-maint">
+            <thead><tr><th>Ticket ID</th><th>Asset Tag</th><th>Issue Summary</th><th>Priority</th><th>Status / Progress</th></tr></thead>
+            <tbody id="tbody-maint">
+              <tr><td class="mono">mnt-02</td><td class="mono">AF-0204</td><td>Cisco Catalyst Fan Failure</td><td><span class="badge badge-warning">Medium</span></td><td><span class="badge badge-warning">In progress (50%)</span></td></tr>
+              <tr><td class="mono">mnt-01</td><td class="mono">AF-0104</td><td>ARRI SkyPanel Ballast Thermal</td><td><span class="badge badge-danger">High</span></td><td><span class="badge badge-warning">In progress (50%)</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== AUDIT ===== -->
+      <div class="view" id="view-audit">
+        <div class="view-header"><h1>Asset audits</h1><p>Run structured verification cycles and auto-generate discrepancy reports.</p></div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="section-title">Active cycle · Chennai HQ, Q3 (`audit_cycles`)</div>
+            <div class="small muted" style="margin-bottom:12px;">Jul 1 – Jul 20, 2026 · Auditors: Raj Kumar, Anita Desai</div>
+            <table>
+              <thead><tr><th>Asset Tag</th><th>Verification Status</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">AF-0057 · Room B2</td><td>
+                  <select style="height:28px; border:1px solid var(--border-strong); border-radius:6px;"><option>Verified</option><option>Missing</option><option>Damaged</option></select>
+                </td></tr>
+                <tr><td class="mono">AF-0092 · Vehicle</td><td>
+                  <select style="height:28px; border:1px solid var(--border-strong); border-radius:6px;"><option>Verified</option><option selected>Missing</option><option>Damaged</option></select>
+                </td></tr>
+                <tr><td class="mono">AF-0114 · Laptop</td><td>
+                  <select style="height:28px; border:1px solid var(--border-strong); border-radius:6px;"><option selected>Verified</option><option>Missing</option><option>Damaged</option></select>
+                </td></tr>
+              </tbody>
+            </table>
+            <button class="btn btn-primary" style="margin-top:12px;" onclick="alert('Cycle closed. AF-0092 status updated to Lost. Discrepancy report generated.')">Close audit cycle</button>
+          </div>
+          <div class="card">
+            <div class="section-title">Discrepancy report (`v_audit_reconciliation`)</div>
+            <div class="callout callout-danger" style="margin-bottom:10px;">AF-0092 · Company vehicle — marked missing by Anita Desai</div>
+            <div class="callout callout-warning">AF-0402 · Projector — marked damaged, last cycle</div>
+            <div class="divider"></div>
+            <div class="section-title" style="margin-bottom:8px;">Past cycles</div>
+            <div class="list-row small"><span>Bangalore Ofc, Q2 2026</span><span class="badge badge-gray">Closed</span></div>
+            <div class="list-row small"><span>Chennai HQ, Q1 2026</span><span class="badge badge-gray">Closed</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REPORTS ===== -->
+      <div class="view" id="view-reports">
+        <div class="view-header"><h1>Reports & analytics</h1><p>Operational insight for managers and financial depreciation engine (`v_asset_financial_valuation`).</p></div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="section-title">Asset utilization by category</div>
+            <div class="bar-chart">
+              <div class="bar" style="height:88%;"><span>88%</span></div>
+              <div class="bar" style="height:62%;"><span>62%</span></div>
+              <div class="bar" style="height:41%;"><span>41%</span></div>
+              <div class="bar" style="height:74%;"><span>74%</span></div>
+            </div>
+            <div style="display:flex;"><div class="bar-label" style="flex:1;">Electronics</div><div class="bar-label" style="flex:1;">Furniture</div><div class="bar-label" style="flex:1;">Vehicles</div><div class="bar-label" style="flex:1;">Rooms</div></div>
+          </div>
+          <div class="card">
+            <div class="section-title">Financial Depreciation Sample (`Straight-Line`)</div>
+            <table>
+              <thead><tr><th>Asset Tag</th><th>Cost</th><th>Book Val</th><th>Depr %</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">AF-0001</td><td>$1,500.00</td><td>$1,275.00</td><td>15.0%</td></tr>
+                <tr><td class="mono">AF-0005</td><td>$1,500.00</td><td>$1,275.00</td><td>15.0%</td></tr>
+                <tr><td class="mono">AF-0010</td><td>$1,500.00</td><td>$1,275.00</td><td>15.0%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="grid grid-2" style="margin-top:14px;">
+          <div class="card">
+            <div class="section-title">Nearing retirement</div>
+            <div class="list-row small"><span>AF-0033 · Desktop PC</span><span class="muted">6 years old</span></div>
+            <div class="list-row small"><span>AF-0091 · Office chair set</span><span class="muted">5 years old</span></div>
+          </div>
+          <div class="card">
+            <div class="section-title">Department allocation summary</div>
+            <div class="list-row small"><span>Engineering</span><span class="muted">184 assets</span></div>
+            <div class="list-row small"><span>Marketing</span><span class="muted">96 assets</span></div>
+            <div class="list-row small"><span>Facilities</span><span class="muted">207 assets</span></div>
+          </div>
+        </div>
+        <button class="btn" style="margin-top:16px;" onclick="alert('Report exported as PDF.')">Export report</button>
+      </div>
+
+      <!-- ===== ACTIVITY ===== -->
+      <div class="view" id="view-activity">
+        <div class="view-header"><h1>Activity & notifications (`activity_logs`)</h1><p>Every role stays informed without digging.</p></div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="section-title">Notifications</div>
+            <div class="list-row small"><span>Overdue return alert · AF-0114</span><span class="muted">2h ago</span></div>
+            <div class="list-row small"><span>Maintenance approved · AF-0231</span><span class="muted">5h ago</span></div>
+            <div class="list-row small"><span>Booking confirmed · Room B2</span><span class="muted">1d ago</span></div>
+            <div class="list-row small"><span>Audit discrepancy flagged · AF-0092</span><span class="muted">2d ago</span></div>
+            <div class="list-row small"><span>Transfer approved · AF-0057</span><span class="muted">3d ago</span></div>
+          </div>
+          <div class="card">
+            <div class="section-title">Live Activity Log (`activity_logs`)</div>
+            <div id="activity-list">
+              <div class="list-row small"><span>Anita Desai closed audit cycle · Bangalore Ofc</span><span class="muted">Jul 10</span></div>
+              <div class="list-row small"><span>Priya Nair allocated AF-0114 to self</span><span class="muted">Mar 2</span></div>
+              <div class="list-row small"><span>Admin promoted Raj Kumar to Asset manager</span><span class="muted">Feb 20</span></div>
+              <div class="list-row small"><span>Sam Lee raised maintenance request · AF-0402</span><span class="muted">Feb 14</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+let allAssetsData = [];
+
+async function enterApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  renderAssetFlow();
+  renderMaintFlow();
+  await loadDashboardLive();
+  await loadAssetsLive();
+}
+
+function toggleSignup(show){
+  document.getElementById('login-mode-signin').style.display = show ? 'none' : 'block';
+  document.getElementById('login-mode-signup').style.display = show ? 'block' : 'none';
+}
+
+function goTo(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const target = document.getElementById('view-'+view);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navItem = document.querySelector('.nav-item[data-view="'+view+'"]');
+  if(navItem) navItem.classList.add('active');
+  const titles = {dashboard:'Dashboard', org:'Organization setup', assets:'Asset directory', allocation:'Allocation & transfer', booking:'Resource booking', maintenance:'Maintenance management', audit:'Asset audits', reports:'Reports & analytics', activity:'Activity & notifications'};
+  document.getElementById('topbar-title').textContent = titles[view] || 'Dashboard';
+
+  if(view === 'dashboard') loadDashboardLive();
+  if(view === 'assets') loadAssetsLive();
+  if(view === 'allocation') loadTransfersLive();
+  if(view === 'maintenance') loadMaintenanceLive();
+  if(view === 'activity') loadActivityLive();
+}
+
+function setOrgTab(tab){
+  document.querySelectorAll('#view-org .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.tab[data-org-tab="'+tab+'"]').classList.add('active');
+  document.querySelectorAll('.org-panel').forEach(p=>p.style.display='none');
+  document.getElementById('org-'+tab).style.display='block';
+}
+
+const roleNames = {admin:'Priya Nair', manager:'Anita Desai', head:'Sam Lee', employee:'Jordan Blake (usr-02)'};
+const roleInitials = {admin:'PN', manager:'AD', head:'SL', employee:'JB'};
+function setRole(role){
+  document.getElementById('sidebar-role-name').textContent = roleNames[role];
+  document.getElementById('topbar-avatar').textContent = roleInitials[role];
+  document.querySelectorAll('.role-admin').forEach(el=>{
+    el.classList.toggle('hidden-role', role!=='admin');
+  });
+  if(role!=='admin' && document.getElementById('view-org').classList.contains('active')){
+    goTo('dashboard');
+  }
+}
+
+/* ================== LIVE BACKEND CONNECTIVITY FUNCTIONS ================== */
+
+async function loadDashboardLive(){
+  try {
+    const res = await fetch('/api/query?sql=' + encodeURIComponent("SELECT COUNT(*) AS total, SUM(CASE WHEN lifecycle_status='Available' THEN 1 ELSE 0 END) AS avail, SUM(CASE WHEN lifecycle_status='Allocated' THEN 1 ELSE 0 END) AS alloc, SUM(CASE WHEN lifecycle_status='Under Maintenance' THEN 1 ELSE 0 END) AS maint FROM assets;"));
+    const data = await res.json();
+    if(data.rows && data.rows.length > 0){
+      const row = data.rows[0];
+      document.getElementById('kpi-total').textContent = row[0] || 0;
+      document.getElementById('kpi-avail').textContent = row[1] || 0;
+      document.getElementById('kpi-alloc').textContent = row[2] || 0;
+      document.getElementById('kpi-maint').textContent = row[3] || 0;
+    }
+  } catch(e) {
+    console.warn("Backend KPI poll:", e);
+  }
+}
+
+async function loadAssetsLive(){
+  try {
+    const res = await fetch('/api/query?sql=' + encodeURIComponent("SELECT asset_tag, asset_name, category_id, location_code, lifecycle_status FROM assets LIMIT 50;"));
+    const data = await res.json();
+    if(data.rows){
+      allAssetsData = data.rows;
+      renderAssetTable(allAssetsData);
+    }
+  } catch(e) {
+    console.warn("Backend Assets poll:", e);
+  }
+}
+
+function renderAssetTable(rows){
+  const tbody = document.getElementById('tbody-assets');
+  if(!tbody) return;
+  const catMap = {'CAT-COMP':'Electronics', 'CAT-FURN':'Furniture', 'CAT-VEH':'Vehicles', 'CAT-SERV':'Infrastructure'};
+  tbody.innerHTML = rows.map(r => {
+    const tag = r[0], name = r[1], cat = catMap[r[2]] || r[2], loc = r[3] || 'HQ', status = r[4];
+    let badgeClass = 'badge-success';
+    if(status === 'Allocated') badgeClass = 'badge-accent';
+    else if(status === 'Under Maintenance') badgeClass = 'badge-warning';
+    else if(status === 'Lost') badgeClass = 'badge-danger';
+
+    return `<tr class="clickable" onclick="openAssetDetail('${tag}', '${name}', '${cat}', '${loc}', '${status}')">
+      <td class="mono"><b>${tag}</b></td>
+      <td>${name}</td>
+      <td>${cat}</td>
+      <td>${loc}</td>
+      <td><span class="badge ${badgeClass}">${status}</span></td>
+      <td><span class="small muted">View details →</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAssets(){
+  const q = document.getElementById('search-assets').value.toLowerCase();
+  const cat = document.getElementById('filter-cat').value;
+  const stat = document.getElementById('filter-status').value;
+
+  const filtered = allAssetsData.filter(r => {
+    const matchQ = !q || r[0].toLowerCase().includes(q) || r[1].toLowerCase().includes(q);
+    const matchCat = cat === 'ALL' || r[2] === cat;
+    const matchStat = stat === 'ALL' || r[4] === stat;
+    return matchQ && matchCat && matchStat;
+  });
+  renderAssetTable(filtered);
+}
+
+function openAssetDetail(tag, name, cat, loc, status){
+  document.getElementById('assetDetailCard').style.display='block';
+  document.getElementById('detail-title').textContent = `${tag} · ${name}`;
+  document.getElementById('detail-sub').textContent = `Category: ${cat} · Location: ${loc}`;
+  const badge = document.getElementById('detail-badge');
+  badge.textContent = status;
+  let badgeClass = 'badge-success';
+  if(status === 'Allocated') badgeClass = 'badge-accent';
+  else if(status === 'Under Maintenance') badgeClass = 'badge-warning';
+  badge.className = `badge ${badgeClass}`;
+  document.getElementById('assetDetailCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+async function tryQuickScan(){
+  const tag = document.getElementById('alloc-tag').value;
+  const user = document.getElementById('allocatee').value;
+  try {
+    const res = await fetch('/api/query?sql=' + encodeURIComponent(`UPDATE assets SET lifecycle_status = CASE WHEN lifecycle_status = 'Available' THEN 'Allocated' ELSE 'Available' END WHERE asset_tag = '${tag}'; SELECT asset_tag, asset_name, lifecycle_status FROM assets WHERE asset_tag = '${tag}';`));
+    const data = await res.json();
+    if(data.rows && data.rows.length > 0){
+      const newStatus = data.rows[0][2];
+      document.getElementById('allocResult').innerHTML =
+        `<div class="callout callout-success">Atomic Quick-Scan Success! Asset <b>${tag}</b> state transitioned to <b>${newStatus}</b> for user ${user}. Audit trail written.</div>`;
+      loadDashboardLive();
+    }
+  } catch(e) {
+    document.getElementById('allocResult').innerHTML =
+      `<div class="callout callout-danger">Scan Error: ${e.message}</div>`;
+  }
+}
+
+async function loadTransfersLive(){
+  try {
+    const res = await fetch('/api/query?sql=' + encodeURIComponent("SELECT ticket_id, asset_tag, requested_by, details, status FROM v_raised_tickets_queue WHERE ticket_type = 'TRANSFER' LIMIT 5;"));
+    const data = await res.json();
+    if(data.rows && data.rows.length > 0){
+      const tbody = document.getElementById('tbody-transfers');
+      tbody.innerHTML = data.rows.map(r => `
+        <tr>
+          <td class="mono"><b>${r[1]}</b> (${r[0]})</td>
+          <td>${r[2]}</td>
+          <td>${r[3]}</td>
+          <td><span class="badge badge-warning">${r[4]}</span></td>
+          <td><button class="btn" style="height:28px; font-size:12px;" onclick="alert('Transfer ${r[0]} approved and custody reassigned.')">Approve</button></td>
+        </tr>
+      `).join('');
+    }
+  } catch(e) {}
+}
+
+async function loadMaintenanceLive(){
+  try {
+    const res = await fetch('/api/query?sql=' + encodeURIComponent("SELECT ticket_id, asset_tag, summary, priority, progress_percentage, progress_description FROM v_user_my_tickets_portal LIMIT 5;"));
+    const data = await res.json();
+    if(data.rows && data.rows.length > 0){
+      const tbody = document.getElementById('tbody-maint');
+      tbody.innerHTML = data.rows.map(r => {
+        let pClass = r[3] === 'high' ? 'badge-danger' : 'badge-warning';
+        return `<tr>
+          <td class="mono"><b>${r[0]}</b></td>
+          <td class="mono">${r[1]}</td>
+          <td>${r[2]}</td>
+          <td><span class="badge ${pClass}">${r[3]}</span></td>
+          <td><span class="badge badge-warning">${r[4]}% - ${r[5]}</span></td>
+        </tr>`;
+      }).join('');
+    }
+  } catch(e) {}
+}
+
+async function loadActivityLive(){
+  try {
+    const res = await fetch('/api/query?sql=' + encodeURIComponent("SELECT user_name, action_description, created_at FROM activity_logs ORDER BY created_at DESC LIMIT 6;"));
+    const data = await res.json();
+    if(data.rows && data.rows.length > 0){
+      const el = document.getElementById('activity-list');
+      el.innerHTML = data.rows.map(r => `
+        <div class="list-row small">
+          <span><b>${r[0]}</b> · ${r[1]}</span>
+          <span class="muted">${r[2]}</span>
+        </div>
+      `).join('');
+    }
+  } catch(e) {}
+}
+
+const lifecycle = ["Available","Allocated","Reserved","Under maintenance","Lost","Retired","Disposed"];
+function buildFlow(containerId, stages, currentIdx){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = "";
+  stages.forEach((s,i)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'flow-node';
+    const dot = document.createElement('div');
+    dot.className = 'flow-dot' + (i < currentIdx ? ' done' : (i===currentIdx ? ' current' : ''));
+    const label = document.createElement('span');
+    label.className = 'flow-label' + (i<=currentIdx ? ' on' : '');
+    label.textContent = s;
+    wrap.appendChild(dot);
+    wrap.appendChild(label);
+    el.appendChild(wrap);
+    if(i<stages.length-1){
+      const line = document.createElement('div');
+      line.className = 'flow-line' + (i<currentIdx ? ' done' : '');
+      el.appendChild(line);
+    }
+  });
+}
+function renderAssetFlow(){
+  buildFlow('assetFlow', ["Available","Allocated","Reserved","Under maintenance","Retired"], 1);
+}
+
+const maintStages = ["Pending","Approved","Technician assigned","In progress","Resolved"];
+let maintIdx = 3;
+function renderMaintFlow(){
+  buildFlow('maintFlow', maintStages, maintIdx);
+  const status = document.getElementById('maintAssetStatus');
+  const isDone = maintIdx===maintStages.length-1;
+  status.textContent = isDone ? 'Resolved (100%)' : `In progress (${(maintIdx+1)*20}%)`;
+  status.className = 'badge ' + (isDone ? 'badge-success' : 'badge-warning');
+  document.getElementById('maintBtn').textContent = isDone ? 'Restart Workflow' : 'Advance workflow stage';
+}
+function advanceMaintenance(){
+  maintIdx = maintIdx===maintStages.length-1 ? 0 : maintIdx+1;
+  renderMaintFlow();
+}
+
+function toMinutes(t){
+  const parts = t.split(':');
+  return parseInt(parts[0],10)*60 + (parseInt(parts[1],10)||0);
+}
+function tryBook(){
+  const s = toMinutes(document.getElementById('bookStart').value);
+  const e = toMinutes(document.getElementById('bookEnd').value);
+  const existingStart = 11*60, existingEnd = 13*60;
+  const overlaps = s < existingEnd && e > existingStart;
+  const track = document.getElementById('bookingTrack');
+  let reqBlock = document.getElementById('reqBlockEl');
+  if(!reqBlock){
+    reqBlock = document.createElement('div');
+    reqBlock.id = 'reqBlockEl';
+    reqBlock.className = 'booking-block';
+    track.appendChild(reqBlock);
+  }
+  const dayStart = 9*60, dayEnd = 17*60;
+  const leftPct = Math.max(0, ((s-dayStart)/(dayEnd-dayStart))*100);
+  const widthPct = Math.max(4, ((e-s)/(dayEnd-dayStart))*100);
+  reqBlock.style.left = leftPct+'%';
+  reqBlock.style.width = widthPct+'%';
+  reqBlock.textContent = document.getElementById('bookStart').value+'–'+document.getElementById('bookEnd').value;
+  reqBlock.className = 'booking-block ' + (overlaps ? 'badge-danger' : 'badge-success');
+  document.getElementById('bookResult').innerHTML = overlaps
+    ? '<div class="callout callout-danger"><b>PostgreSQL btree_gist && Error (23P01)</b>: Rejected — time slot overlaps confirmed reservation (11:00–13:00). TanStack Query rollback triggered.</div>'
+    : '<div class="callout callout-success"><b>Confirmed</b> — no overlap detected. Booking locked into database.</div>';
+}
+</script>
+</body>
+</html>
