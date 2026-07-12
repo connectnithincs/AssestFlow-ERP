@@ -328,30 +328,62 @@ export default function App() {
               {/* ===== DASHBOARD ===== */}
               {activeView === 'dashboard' && (
                 <div className="view active" id="view-dashboard">
-                  <div className="view-header">
-                    <h1 id="welcome-heading">Good morning, {
-                      userId === 'f1111111-1111-4111-8111-111111111111' ? 'Priya' : 
-                      userId === 'f2222222-2222-4222-8222-222222222222' ? 'Priya' :
-                      userId === 'f3333333-3333-4333-8333-333333333333' ? 'Rajesh' : 'Jordan'
-                    }</h1>
-                    <p>Here's what's moving across the org today synced from PostgreSQL engine.</p>
-                  </div>
-                  <div className="grid grid-4" style={{ marginBottom: '16px' }}>
-                    <div className="card kpi">
-                      <div className="label">Assets available</div>
-                      <div className="num" id="kpi-avail">{kpisLoading ? '--' : kpis?.count_available}</div>
+                  <div className="hero">
+                    <div>
+                      <h1 className="hero-greeting" id="welcome-heading">
+                        Good morning, {
+                          userId === 'f1111111-1111-4111-8111-111111111111' ? 'Priya' : 
+                          userId === 'f2222222-2222-4222-8222-222222222222' ? 'Priya' :
+                          userId === 'f3333333-3333-4333-8333-333333333333' ? 'Rajesh' : 'Jordan'
+                        }
+                      </h1>
+                      <p className="hero-sub">Here's what's moving across the org today synced from PostgreSQL engine.</p>
+                      <div className="hero-kpis">
+                        <div className="kpi-card c-emerald">
+                          <div className="kpi-label">Assets available</div>
+                          <div className="kpi-num" id="kpi-avail">{kpisLoading ? '--' : kpis?.count_available}</div>
+                        </div>
+                        <div className="kpi-card c-navy">
+                          <div className="kpi-label">Assets allocated</div>
+                          <div className="kpi-num" id="kpi-alloc">{kpisLoading ? '--' : kpis?.count_allocated}</div>
+                        </div>
+                        <div className="kpi-card c-amber">
+                          <div className="kpi-label">Under maintenance</div>
+                          <div className="kpi-num" id="kpi-maint">{kpisLoading ? '--' : kpis?.count_under_maintenance}</div>
+                        </div>
+                        <div className="kpi-card c-forest">
+                          <div className="kpi-label">Total registry</div>
+                          <div className="kpi-num" id="kpi-total">{kpisLoading ? '--' : kpis?.total_assets}</div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="card kpi">
-                      <div className="label">Assets allocated</div>
-                      <div className="num" id="kpi-alloc">{kpisLoading ? '--' : kpis?.count_allocated}</div>
-                    </div>
-                    <div className="card kpi">
-                      <div className="label">Under maintenance</div>
-                      <div className="num" id="kpi-maint">{kpisLoading ? '--' : kpis?.count_under_maintenance}</div>
-                    </div>
-                    <div className="card kpi">
-                      <div className="label">Total registry</div>
-                      <div className="num" id="kpi-total">{kpisLoading ? '--' : kpis?.total_assets}</div>
+                    <div className="hero-visual">
+                      <div className="float-card f1">
+                        <div className="fc-title">
+                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M1 5l7-3 7 3-7 3-7-3z" stroke="var(--emerald)"/><path d="M1 5v6l7 3 7-3V5" stroke="var(--emerald)"/></svg>
+                          Asset portfolio
+                        </div>
+                        <div className="fc-body">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span className="muted">Total assets</span><b>{kpisLoading ? '--' : kpis?.total_assets}</b></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="muted">Utilization</span><b style={{ color: 'var(--emerald-dark)' }}>{kpisLoading ? '--' : Math.round(((kpis?.count_allocated || 0) / (kpis?.total_assets || 1)) * 100)}%</b></div>
+                        </div>
+                      </div>
+                      <div className="float-card f2" onClick={() => setActiveModal('scan')} style={{ cursor: 'pointer' }}>
+                        <div className="fc-title">Scan asset tag</div>
+                        <div className="qr-box">
+                          <svg className="qr-pattern" viewBox="0 0 40 40" fill="#7FD9BB"><rect x="2" y="2" width="10" height="10"/><rect x="28" y="2" width="10" height="10"/><rect x="2" y="28" width="10" height="10"/><rect x="16" y="8" width="4" height="4"/><rect x="22" y="16" width="4" height="4"/><rect x="16" y="24" width="4" height="4"/><rect x="24" y="26" width="4" height="4"/><rect x="30" y="18" width="4" height="4"/></svg>
+                          <div className="qr-corner tl"></div><div className="qr-corner tr"></div><div className="qr-corner bl"></div><div className="qr-corner br"></div>
+                          <div className="qr-scanline"></div>
+                        </div>
+                        <div className="small" style={{ color: 'var(--emerald-dark)', fontWeight: 600 }}>Quick scan mode active ✓</div>
+                      </div>
+                      <div className="float-card f3">
+                        <div className="fc-title" style={{ color: 'var(--amber)' }}>
+                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1l7 13H1z" stroke="var(--amber)" strokeLinejoin="round"/><path d="M8 6v4M8 12h.01" stroke="var(--amber)"/></svg>
+                          Maintenance alert
+                        </div>
+                        <div className="fc-body"><b>Active alerts</b><div className="muted" style={{ marginTop: '2px' }}>{kpisLoading ? '--' : kpis?.count_under_maintenance} items under repair</div></div>
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-2">
