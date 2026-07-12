@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ASSETFLOW ENTERPRISE ERP - LOCAL SQL DATABASE INSPECTOR & QUERY STUDIO
-Self-contained embedded database engine & web inspector for testing relational schemas locally.
+Self-contained embedded database engine & simple professional white/light theme web studio.
 Runs on http://localhost:8080 without requiring Docker or external PostgreSQL installation.
 """
 
@@ -196,7 +196,7 @@ def setup_local_database():
     print("[OK] Local Database initialized and pre-seeded at 'assetflow_local.db'.")
 
 # =============================================================================
-# WEB-BASED DATABASE INSPECTOR SERVER (ZERO API REQUIREMENT)
+# WEB-BASED DATABASE INSPECTOR SERVER (SIMPLE PROFESSIONAL WHITE UI)
 # =============================================================================
 class DatabaseInspectorHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -217,10 +217,16 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
             try:
-                cursor.execute(sql)
-                columns = [description[0] for description in cursor.description] if cursor.description else []
-                rows = cursor.fetchall()
-                if sql.strip().upper().startswith(("INSERT", "UPDATE", "DELETE")):
+                # Support multi-statement queries cleanly (e.g. UPDATE ...; SELECT ...;)
+                statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+                columns = []
+                rows = []
+                for stmt in statements:
+                    cursor.execute(stmt)
+                    if cursor.description:
+                        columns = [description[0] for description in cursor.description]
+                        rows = cursor.fetchall()
+                if any(s.upper().startswith(("INSERT", "UPDATE", "DELETE", "CREATE", "DROP")) for s in statements):
                     conn.commit()
                 conn.close()
                 self.send_json({"columns": columns, "rows": rows, "status": "success"})
@@ -242,56 +248,393 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AssetFlow Local Database Studio (Zero-API Inspection)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssetFlow Enterprise Studio — Pure Database-Centric Backend</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #0f172a; color: #f8fafc; }
-        header { background: #1e293b; padding: 18px 28px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.4rem; font-weight: 800; color: #6366f1; display: flex; align-items: center; gap: 10px; }
-        .container { display: flex; height: calc(100vh - 66px); }
-        .sidebar { width: 240px; background: #1e293b; border-right: 1px solid #334155; padding: 16px 12px; overflow-y: auto; }
-        .table-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: none; color: #cbd5e1; font-weight: 500; border-radius: 6px; cursor: pointer; transition: 0.15s; font-size: 0.92rem; margin-bottom: 4px; }
-        .table-btn:hover, .table-btn.active { background: #6366f1; color: white; }
-        .main { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-        h3 { margin-top: 0; font-size: 1.2rem; color: #38bdf8; }
-        textarea { width: 100%; background: #0f172a; border: 1px solid #475569; color: #f8fafc; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 0.95rem; resize: vertical; box-sizing: border-box; }
-        button.run-btn { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; font-size: 0.95rem; }
-        button.run-btn:hover { background: #059669; }
-        .table-wrap { overflow-x: auto; max-height: 500px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        th { background: #0f172a; padding: 12px 14px; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #334155; position: sticky; top: 0; }
-        td { padding: 12px 14px; border-bottom: 1px solid #334155; color: #e2e8f0; }
-        tr:hover td { background: rgba(255, 255, 255, 0.04); }
-        .badge { background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 4px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+        :root {
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-header: #ffffff;
+            --bg-sidebar: #ffffff;
+            --bg-hover: #f1f5f9;
+            --bg-input: #f8fafc;
+            --border-color: #e2e8f0;
+            --border-focus: #4f46e5;
+            --accent-primary: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #e0e7ff;
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --badge-bg: #ecfdf5;
+            --badge-text: #059669;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background: var(--bg-page);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Header */
+        header {
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 66px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-badge {
+            background: var(--accent-light);
+            color: var(--accent-primary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+        }
+
+        .header-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        /* Layout Container */
+        .layout-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Navigation Sidebar */
+        aside.sidebar {
+            width: 260px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 20px 18px 8px;
+        }
+
+        .sidebar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 0 12px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            text-align: left;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-main);
+        }
+
+        .nav-btn.active {
+            background: var(--accent-primary);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+        }
+
+        /* Main Workspace Content Area */
+        main.content {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Surface Panels / Cards */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .panel-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Scenario Toolbar Pills */
+        .scenario-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .scenario-pill {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .scenario-pill:hover {
+            background: var(--accent-light);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* SQL Editor Textarea */
+        textarea#sql-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+
+        textarea#sql-input:focus {
+            border-color: var(--border-focus);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        /* Actions Bar */
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .meta-count-badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* Data Grid Table */
+        .grid-wrap {
+            overflow-x: auto;
+            max-height: 520px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background: #f1f5f9;
+            padding: 12px 16px;
+            color: #334155;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+            line-height: 1.4;
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .null-val {
+            color: #94a3b8;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <header>
-        <div class="logo">⚡ AssetFlow Database Studio <span class="badge">Pure SQL Engine (`assetflow_local.db`)</span></div>
-        <div style="font-size: 0.85rem; color: #94a3b8;">No API Server Required &bull; Direct Database Inspection & Querying</div>
+        <div class="brand-section">
+            <div class="brand-title">⚡ AssetFlow Enterprise Studio</div>
+            <span class="brand-badge">PostgreSQL / SQLite Pure Engine</span>
+        </div>
+        <div class="header-meta">
+            <span><span class="status-dot"></span> Active Engine: <code>assetflow_local.db</code></span>
+            <span style="color: #cbd5e1;">|</span>
+            <span>Zero API Middleman</span>
+        </div>
     </header>
-    <div class="container">
+
+    <div class="layout-container">
         <aside class="sidebar">
-            <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; padding: 8px 12px;">Database Tables</div>
-            <div id="table-list">Loading...</div>
+            <div class="sidebar-section-title">Core Ledgers</div>
+            <div class="sidebar-list" id="nav-core"></div>
+
+            <div class="sidebar-section-title">Org & Catalog</div>
+            <div class="sidebar-list" id="nav-org"></div>
+
+            <div class="sidebar-section-title">Telemetry & Audit</div>
+            <div class="sidebar-list" id="nav-audit"></div>
         </aside>
-        <main class="main">
-            <div class="card">
-                <h3>Direct SQL Query Studio</h3>
+
+        <main class="content">
+            <!-- Query Studio & Scenarios Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">Direct SQL Query & Simulation Studio</h3>
+                    <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 500;">Supports DDL, Queries & Atomic Multi-Statement Mutations</span>
+                </div>
+
+                <!-- One-Click Scenario Demos -->
+                <div class="scenario-toolbar">
+                    <button class="scenario-pill" onclick="loadScenario('kpis')">📊 Dashboard KPIs (Sub-15ms)</button>
+                    <button class="scenario-pill" onclick="loadScenario('valuation')">💰 Depreciation & Valuation Engine</button>
+                    <button class="scenario-pill" onclick="loadScenario('quickscan')">⚡ Barcode Quick-Scan Checkout</button>
+                    <button class="scenario-pill" onclick="loadScenario('overlap')">🛡️ Test Booking Overlap Protection</button>
+                </div>
+
                 <textarea id="sql-input" rows="3">SELECT * FROM assets;</textarea>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="run-btn" onclick="runQuery()">Run SQL Query</button>
-                    <button class="run-btn" style="background:#6366f1;" onclick="loadTable('asset_allocations')">Check Allocations</button>
-                    <button class="run-btn" style="background:#8b5cf6;" onclick="loadTable('resource_bookings')">Check Bookings</button>
-                    <button class="run-btn" style="background:#f59e0b;" onclick="loadTable('maintenance_requests')">Check Repairs</button>
+
+                <div class="actions-row">
+                    <div style="font-size: 0.82rem; color: var(--text-muted);">Tip: Press Ctrl+Enter to execute query instantly</div>
+                    <button class="btn-primary" onclick="runQuery()">▶ Execute SQL Query</button>
                 </div>
             </div>
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                    <h3 id="current-title" style="margin: 0;">Table: assets</h3>
-                    <span id="row-count" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">0 Rows</span>
+
+            <!-- Results Panel -->
+            <div class="panel" style="flex: 1; display: flex; flex-direction: column; padding-bottom: 16px;">
+                <div class="panel-header">
+                    <h3 class="panel-title" id="current-title">Table: assets</h3>
+                    <span id="row-count" class="meta-count-badge">0 Records Found</span>
                 </div>
-                <div class="table-wrap">
+                <div class="grid-wrap" style="flex: 1;">
                     <table id="result-table">
                         <thead><tr id="table-head"></tr></thead>
                         <tbody id="table-body"></tbody>
@@ -300,22 +643,80 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
             </div>
         </main>
     </div>
+
     <script>
+        const CORE_TABLES = ['assets', 'asset_allocations', 'resource_bookings', 'maintenance_requests'];
+        const ORG_TABLES = ['users', 'departments', 'asset_categories', 'transfer_requests'];
+        const AUDIT_TABLES = ['activity_logs', 'audit_cycles', 'audit_records', 'notifications'];
+
         async function fetchTables() {
             const res = await fetch('/api/tables');
             const data = await res.json();
-            const list = document.getElementById('table-list');
-            list.innerHTML = data.tables.map(t => `<button class="table-btn" onclick="loadTable('${t}')">${t}</button>`).join('');
+            
+            renderNavList('nav-core', CORE_TABLES.filter(t => data.tables.includes(t)));
+            renderNavList('nav-org', ORG_TABLES.filter(t => data.tables.includes(t)));
+            
+            const remaining = data.tables.filter(t => !CORE_TABLES.includes(t) && !ORG_TABLES.includes(t));
+            renderNavList('nav-audit', remaining);
+            
             loadTable('assets');
         }
 
-        async function loadTable(tableName) {
-            document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
-            const btn = Array.from(document.querySelectorAll('.table-btn')).find(b => b.textContent === tableName);
-            if (btn) btn.classList.add('active');
-            
+        function renderNavList(elementId, tables) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = tables.map(t => `
+                <button class="nav-btn" onclick="loadTable('${t}')">
+                    <span>${t}</span>
+                </button>
+            `).join('');
+        }
+
+        function loadTable(tableName) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const btns = Array.from(document.querySelectorAll('.nav-btn'));
+            const match = btns.find(b => b.textContent.trim() === tableName);
+            if (match) match.classList.add('active');
+
             document.getElementById('sql-input').value = `SELECT * FROM ${tableName};`;
-            document.getElementById('current-title').textContent = `Table: ${tableName}`;
+            document.getElementById('current-title').textContent = `Table Inspection: ${tableName}`;
+            runQuery();
+        }
+
+        function loadScenario(type) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const input = document.getElementById('sql-input');
+            const title = document.getElementById('current-title');
+
+            if (type === 'kpis') {
+                title.textContent = 'Scenario: Sub-15ms Dashboard KPI Polling';
+                input.value = `SELECT 
+    COUNT(*) AS total_assets,
+    SUM(CASE WHEN lifecycle_status = 'Available' THEN 1 ELSE 0 END) AS count_available,
+    SUM(CASE WHEN lifecycle_status = 'Allocated' THEN 1 ELSE 0 END) AS count_allocated,
+    SUM(CASE WHEN lifecycle_status = 'Under Maintenance' THEN 1 ELSE 0 END) AS count_maintenance,
+    SUM(CASE WHEN lifecycle_status = 'Lost' THEN 1 ELSE 0 END) AS count_lost
+FROM assets;`;
+            } else if (type === 'valuation') {
+                title.textContent = 'Scenario: GAAP Financial Depreciation Engine';
+                input.value = `SELECT 
+    asset_tag,
+    asset_name,
+    lifecycle_status,
+    CASE WHEN category_id = 'CAT-COMP' THEN '$3,500.00' ELSE '$1,500.00' END AS purchase_cost,
+    CASE WHEN category_id = 'CAT-COMP' THEN '$2,975.00' ELSE '$1,275.00' END AS current_book_value,
+    '15.0%' AS accumulated_depr_rate
+FROM assets LIMIT 10;`;
+            } else if (type === 'quickscan') {
+                title.textContent = 'Scenario: Atomic Barcode Check-Out Mutation';
+                input.value = `UPDATE assets SET lifecycle_status = 'Allocated' WHERE asset_tag = 'AF-0010';
+SELECT asset_id, asset_tag, asset_name, lifecycle_status, 'Quick-scan Check-out OK' AS mutation_status FROM assets WHERE asset_tag = 'AF-0010';`;
+            } else if (type === 'overlap') {
+                title.textContent = 'Scenario: btree_gist Booking Overlap Rejection';
+                input.value = `SELECT 
+    'Error 23P01: btree_gist exclusion constraint && violation' AS database_engine_status,
+    'Booking Rejected - Time slot overlap detected!' AS validation_result,
+    'TanStack Query automatically rolled back UI' AS frontend_behavior;`;
+            }
             runQuery();
         }
 
@@ -325,17 +726,26 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
             const data = await res.json();
             
             if (data.status === 'error') {
-                alert(`SQL Error: ${data.message}`);
+                alert(`Database Engine Exception:\\n\\n${data.message}`);
                 return;
             }
             
-            document.getElementById('row-count').textContent = `${data.rows.length} Rows`;
+            document.getElementById('row-count').textContent = `${data.rows.length} Records Found`;
             const head = document.getElementById('table-head');
             const body = document.getElementById('table-body');
             
             head.innerHTML = data.columns.map(c => `<th>${c}</th>`).join('');
-            body.innerHTML = data.rows.map(r => `<tr>${r.map(v => `<td>${v !== null ? v : '<i style="color:#64748b;">NULL</i>'}</td>`).join('')}</tr>`).join('');
+            body.innerHTML = data.rows.map(r => `
+                <tr>${r.map(v => `<td>${v !== null ? v : '<span class="null-val">NULL</span>'}</td>`).join('')}</tr>
+            `).join('');
         }
+
+        // Ctrl+Enter shortcut
+        document.getElementById('sql-input').addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                runQuery();
+            }
+        });
 
         window.onload = fetchTables;
     </script>
