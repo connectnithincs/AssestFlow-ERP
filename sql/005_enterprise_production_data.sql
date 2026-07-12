@@ -1,204 +1,216 @@
 -- ============================================================================
 -- ASSETFLOW ENTERPRISE ERP - PRODUCTION DATA SEED PACK (005)
--- Realistic high-volume enterprise inventory ($250,000+ total valuation)
+-- PostgreSQL-compatible high-volume enterprise inventory
 -- ============================================================================
 
--- Clear existing sample data if re-running
+BEGIN;
+
+-- Clear existing sample data if re-running in dependency order
 DELETE FROM notifications;
 DELETE FROM activity_logs;
 DELETE FROM audit_records;
 DELETE FROM audit_cycles;
 DELETE FROM maintenance_requests;
-DELETE FROM resource_bookings;
+DELETE FROM bookings;
 DELETE FROM transfer_requests;
 DELETE FROM asset_allocations;
 DELETE FROM assets;
-DELETE FROM asset_categories;
+UPDATE departments SET manager_id = NULL;
 DELETE FROM users;
 DELETE FROM departments;
+DELETE FROM asset_categories;
 
 -- 1. DEPARTMENTS (8 Real Corporate Divisions)
-INSERT INTO departments (department_id, department_name, parent_id, manager_name, status) VALUES
-('CORP-HQ', 'Executive & Global Headquarters', NULL, 'Sriram Admin', 'Active'),
-('IT-GLOBAL', 'Global IT & Cloud Infrastructure', 'CORP-HQ', 'Priya Sharma', 'Active'),
-('OPS-MEDIA', 'Media Production & Broadcasting', 'CORP-HQ', 'Rajesh Kumar', 'Active'),
-('FIN-AUDIT', 'Internal Audit & Risk Compliance', 'CORP-HQ', 'Sriram Admin', 'Active'),
-('ENG-CLOUD', 'Cloud Architecture & DevOps Engine', 'IT-GLOBAL', 'Alex Mercer', 'Active'),
-('LOG-SUPPLY', 'Supply Chain & Fleet Operations', 'CORP-HQ', 'Marcus Vance', 'Active'),
-('SEC-CYBER', 'Information Security & SOC Defense', 'IT-GLOBAL', 'Elena Rostova', 'Active'),
-('HR-PEOPLE', 'People Operations & Talent Acquisition', 'CORP-HQ', 'Sarah Jenkins', 'Active');
+INSERT INTO departments (id, code, name, parent_department_id, description, is_active) VALUES
+('01111111-1111-4111-8111-111111111111', 'CORP-HQ', 'Executive & Global Headquarters', NULL, 'Main corporate headquarters', true),
+('02222222-2222-4222-8222-222222222222', 'IT-GLOBAL', 'Global IT & Cloud Infrastructure', '01111111-1111-4111-8111-111111111111', 'Global IT support and networking', true),
+('03333333-3333-4333-8333-333333333333', 'OPS-MEDIA', 'Media Production & Broadcasting', '01111111-1111-4111-8111-111111111111', 'Media and broadcasting support', true),
+('04444444-4444-4444-8444-444444444444', 'FIN-AUDIT', 'Internal Audit & Risk Compliance', '01111111-1111-4111-8111-111111111111', 'Finance and auditing unit', true),
+('05555555-5555-4555-8555-555555555555', 'ENG-CLOUD', 'Cloud Architecture & DevOps Engine', '02222222-2222-4222-8222-222222222222', 'Cloud development and engineering', true),
+('06666666-6666-4666-8666-666666666666', 'LOG-SUPPLY', 'Supply Chain & Fleet Operations', '01111111-1111-4111-8111-111111111111', 'Supply chain and vehicle operations', true),
+('07777777-7777-4777-8777-777777777777', 'SEC-CYBER', 'Information Security & SOC Defense', '02222222-2222-4222-8222-222222222222', 'Security operations center', true),
+('08888888-8888-4888-8888-888888888888', 'HR-PEOPLE', 'People Operations & Talent Acquisition', '01111111-1111-4111-8111-111111111111', 'Human resources department', true);
 
--- 2. USERS (20 Enterprise Profiles across Roles & Departments)
-INSERT INTO users (user_id, name, email, role, department_id, status, created_at) VALUES
-('usr-01', 'Sriram Admin', 'admin@assetflow.local', 'Admin', 'CORP-HQ', 'Active', CURRENT_TIMESTAMP),
-('usr-02', 'Priya Sharma', 'priya.sharma@assetflow.local', 'Asset Manager', 'IT-GLOBAL', 'Active', CURRENT_TIMESTAMP),
-('usr-03', 'Rajesh Kumar', 'rajesh.kumar@assetflow.local', 'Department Head', 'OPS-MEDIA', 'Active', CURRENT_TIMESTAMP),
-('usr-04', 'Alex Mercer', 'alex.mercer@assetflow.local', 'Department Head', 'ENG-CLOUD', 'Active', CURRENT_TIMESTAMP),
-('usr-05', 'Elena Rostova', 'elena.rostova@assetflow.local', 'Department Head', 'SEC-CYBER', 'Active', CURRENT_TIMESTAMP),
-('usr-06', 'Marcus Vance', 'marcus.vance@assetflow.local', 'Department Head', 'LOG-SUPPLY', 'Active', CURRENT_TIMESTAMP),
-('usr-07', 'Sarah Jenkins', 'sarah.jenkins@assetflow.local', 'Department Head', 'HR-PEOPLE', 'Active', CURRENT_TIMESTAMP),
-('usr-08', 'Ananya Iyer', 'ananya.iyer@assetflow.local', 'Employee', 'IT-GLOBAL', 'Active', CURRENT_TIMESTAMP),
-('usr-09', 'Vikram Mehta', 'vikram.mehta@assetflow.local', 'Employee', 'OPS-MEDIA', 'Active', CURRENT_TIMESTAMP),
-('usr-10', 'David Chen', 'david.chen@assetflow.local', 'Employee', 'ENG-CLOUD', 'Active', CURRENT_TIMESTAMP),
-('usr-11', 'Liam O''Connor', 'liam.oconnor@assetflow.local', 'Employee', 'ENG-CLOUD', 'Active', CURRENT_TIMESTAMP),
-('usr-12', 'Aisha Patel', 'aisha.patel@assetflow.local', 'Employee', 'SEC-CYBER', 'Active', CURRENT_TIMESTAMP),
-('usr-13', 'Carlos Gomez', 'carlos.gomez@assetflow.local', 'Employee', 'LOG-SUPPLY', 'Active', CURRENT_TIMESTAMP),
-('usr-14', 'Zoe Nakamura', 'zoe.nakamura@assetflow.local', 'Employee', 'OPS-MEDIA', 'Active', CURRENT_TIMESTAMP),
-('usr-15', 'Thomas Wright', 'thomas.wright@assetflow.local', 'Employee', 'FIN-AUDIT', 'Active', CURRENT_TIMESTAMP),
-('usr-16', 'Fiona Gallagher', 'fiona.gallagher@assetflow.local', 'Employee', 'HR-PEOPLE', 'Active', CURRENT_TIMESTAMP),
-('usr-17', 'Kevin Thorne', 'kevin.thorne@assetflow.local', 'Employee', 'IT-GLOBAL', 'Active', CURRENT_TIMESTAMP),
-('usr-18', 'Hannah Abbott', 'hannah.abbott@assetflow.local', 'Employee', 'OPS-MEDIA', 'Active', CURRENT_TIMESTAMP),
-('usr-19', 'Benjamin Stark', 'benjamin.stark@assetflow.local', 'Employee', 'ENG-CLOUD', 'Active', CURRENT_TIMESTAMP),
-('usr-20', 'Maya Lin', 'maya.lin@assetflow.local', 'Employee', 'SEC-CYBER', 'Active', CURRENT_TIMESTAMP);
+-- 2. USERS (20 Enterprise Profiles)
+INSERT INTO users (id, email, password_hash, first_name, last_name, role_id, department_id, is_active) VALUES
+('f1111111-1111-4111-8111-111111111111', 'admin@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Sriram', 'Admin', (SELECT id FROM roles WHERE name = 'Admin'), '01111111-1111-4111-8111-111111111111', true),
+('f2222222-2222-4222-8222-222222222222', 'priya.sharma@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Priya', 'Sharma', (SELECT id FROM roles WHERE name = 'Asset Manager'), '02222222-2222-4222-8222-222222222222', true),
+('f3333333-3333-4333-8333-333333333333', 'rajesh.kumar@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Rajesh', 'Kumar', (SELECT id FROM roles WHERE name = 'Dept. Head'), '03333333-3333-4333-8333-333333333333', true),
+('f0000000-0000-0000-0000-000000000004', 'alex.mercer@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Alex', 'Mercer', (SELECT id FROM roles WHERE name = 'Dept. Head'), '05555555-5555-4555-8555-555555555555', true),
+('f0000000-0000-0000-0000-000000000005', 'elena.rostova@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Elena', 'Rostova', (SELECT id FROM roles WHERE name = 'Dept. Head'), '07777777-7777-4777-8777-777777777777', true),
+('f0000000-0000-0000-0000-000000000006', 'marcus.vance@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Marcus', 'Vance', (SELECT id FROM roles WHERE name = 'Dept. Head'), '06666666-6666-4666-8666-666666666666', true),
+('f0000000-0000-0000-0000-000000000007', 'sarah.jenkins@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Sarah', 'Jenkins', (SELECT id FROM roles WHERE name = 'Dept. Head'), '08888888-8888-4888-8888-888888888888', true),
+('f4444444-4444-4444-8444-444444444444', 'ananya.iyer@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Ananya', 'Iyer', (SELECT id FROM roles WHERE name = 'Employee'), '02222222-2222-4222-8222-222222222222', true),
+('f0000000-0000-0000-0000-000000000009', 'vikram.mehta@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Vikram', 'Mehta', (SELECT id FROM roles WHERE name = 'Employee'), '03333333-3333-4333-8333-333333333333', true),
+('f0000000-0000-0000-0000-000000000010', 'david.chen@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'David', 'Chen', (SELECT id FROM roles WHERE name = 'Employee'), '05555555-5555-4555-8555-555555555555', true),
+('f0000000-0000-0000-0000-000000000011', 'liam.oconnor@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Liam', 'O''Connor', (SELECT id FROM roles WHERE name = 'Employee'), '05555555-5555-4555-8555-555555555555', true),
+('f0000000-0000-0000-0000-000000000012', 'aisha.patel@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Aisha', 'Patel', (SELECT id FROM roles WHERE name = 'Employee'), '07777777-7777-4777-8777-777777777777', true),
+('f0000000-0000-0000-0000-000000000013', 'carlos.gomez@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Carlos', 'Gomez', (SELECT id FROM roles WHERE name = 'Employee'), '06666666-6666-4666-8666-666666666666', true),
+('f0000000-0000-0000-0000-000000000014', 'zoe.nakamura@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Zoe', 'Nakamura', (SELECT id FROM roles WHERE name = 'Employee'), '03333333-3333-4333-8333-333333333333', true),
+('f0000000-0000-0000-0000-000000000015', 'thomas.wright@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Thomas', 'Wright', (SELECT id FROM roles WHERE name = 'Employee'), '04444444-4444-4444-8444-444444444444', true),
+('f0000000-0000-0000-0000-000000000016', 'fiona.gallagher@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Fiona', 'Gallagher', (SELECT id FROM roles WHERE name = 'Employee'), '08888888-8888-4888-8888-888888888888', true),
+('f0000000-0000-0000-0000-000000000017', 'kevin.thorne@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Kevin', 'Thorne', (SELECT id FROM roles WHERE name = 'Employee'), '02222222-2222-4222-8222-222222222222', true),
+('f0000000-0000-0000-0000-000000000018', 'hannah.abbott@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Hannah', 'Abbott', (SELECT id FROM roles WHERE name = 'Employee'), '03333333-3333-4333-8333-333333333333', true),
+('f0000000-0000-0000-0000-000000000019', 'benjamin.stark@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Benjamin', 'Stark', (SELECT id FROM roles WHERE name = 'Employee'), '05555555-5555-4555-8555-555555555555', true),
+('f0000000-0000-0000-0000-000000000020', 'maya.lin@assetflow.local', 'scrypt:32768:8:1$dummyhash', 'Maya', 'Lin', (SELECT id FROM roles WHERE name = 'Employee'), '07777777-7777-4777-8777-777777777777', true);
+
+-- Update Departments with Managers
+UPDATE departments SET manager_id = 'f1111111-1111-4111-8111-111111111111' WHERE code = 'CORP-HQ';
+UPDATE departments SET manager_id = 'f2222222-2222-4222-8222-222222222222' WHERE code = 'IT-GLOBAL';
+UPDATE departments SET manager_id = 'f3333333-3333-4333-8333-333333333333' WHERE code = 'OPS-MEDIA';
+UPDATE departments SET manager_id = 'f1111111-1111-4111-8111-111111111111' WHERE code = 'FIN-AUDIT';
+UPDATE departments SET manager_id = 'f0000000-0000-0000-0000-000000000004' WHERE code = 'ENG-CLOUD';
+UPDATE departments SET manager_id = 'f0000000-0000-0000-0000-000000000006' WHERE code = 'LOG-SUPPLY';
+UPDATE departments SET manager_id = 'f0000000-0000-0000-0000-000000000005' WHERE code = 'SEC-CYBER';
+UPDATE departments SET manager_id = 'f0000000-0000-0000-0000-000000000007' WHERE code = 'HR-PEOPLE';
 
 -- 3. ASSET CATEGORIES (6 High-Value Schemas)
-INSERT INTO asset_categories (category_id, category_name, default_warranty_months, custom_fields_schema, status) VALUES
-('cat-1', 'Enterprise Computing & Laptops', 36, '{"CPU": "String", "RAM": "String", "SSD": "String", "MAC_Address": "String"}', 'Active'),
-('cat-2', 'Broadcast Production & Optics', 24, '{"Sensor_Resolution": "String", "Lens_Mount": "String", "Firmware": "String"}', 'Active'),
-('cat-3', 'Data Center & Network Infrastructure', 60, '{"Rack_Units": "Integer", "Port_Speed_Gbps": "Integer", "Power_Supply_Dual": "Boolean"}', 'Active'),
-('cat-4', 'Executive Ergonomic Furniture', 120, '{"Material": "String", "Max_Load_Kg": "Integer", "Adjustable_Lumbar": "Boolean"}', 'Active'),
-('cat-5', 'Field Fleet Vehicles & Logistics', 36, '{"VIN": "String", "License_Plate": "String", "Fuel_Type": "String", "Insurance_Expiry": "Date"}', 'Active'),
-('cat-6', 'Diagnostic & Lab Instrumentation', 48, '{"Calibration_Frequency_Months": "Integer", "Accuracy_Tolerance": "String", "Cert_ID": "String"}', 'Active');
+INSERT INTO asset_categories (id, name, description, warranty_period_months, custom_fields_schema, is_active) VALUES
+('c0000000-0000-0000-0000-000000000001', 'Electronics', 'Laptops, desktops, tablets, and mobile hardware', 36, '{"CPU": "String", "RAM": "String", "SSD": "String", "MAC_Address": "String"}', true),
+('c0000000-0000-0000-0000-000000000002', 'Production Equipment', 'Cinema cameras, lenses, lighting rigs, and audio recorders', 24, '{"Sensor_Resolution": "String", "Lens_Mount": "String", "Firmware": "String"}', true),
+('c0000000-0000-0000-0000-000000000003', 'Network Infrastructure', 'Data Center switches, firewalls, and server racks', 60, '{"Rack_Units": "Integer", "Port_Speed_Gbps": "Integer", "Power_Supply_Dual": "Boolean"}', true),
+('c0000000-0000-0000-0000-000000000004', 'Furniture', 'Office chairs, desks, ergonomic mounts, and boardroom fixtures', 120, '{"Material": "String", "Max_Load_Kg": "Integer", "Adjustable_Lumbar": "Boolean"}', true),
+('c0000000-0000-0000-0000-000000000005', 'Vehicles', 'Company transport, utility vans, and executive shuttles', 36, '{"VIN": "String", "License_Plate": "String", "Fuel_Type": "String", "Insurance_Expiry": "Date"}', true),
+('c0000000-0000-0000-0000-000000000006', 'A/V Equipment', 'Projectors, PA systems, and smart conference boards', 24, '{"Calibration_Frequency_Months": "Integer", "Accuracy_Tolerance": "String", "Cert_ID": "String"}', true);
 
 -- 4. MASTER ASSETS (40 Realistic Enterprise Inventory Items)
-INSERT INTO assets (asset_id, asset_tag, asset_name, category_id, condition_status, location, department_id, lifecycle_status, serial_number, created_at) VALUES
--- Computing & Laptops (12 Items)
-('ast-01', 'AF-0001', 'MacBook Pro M3 Max (16-inch, 64GB RAM, 2TB SSD)', 'cat-1', 'New', 'Server Depot Rack 1', 'IT-GLOBAL', 'Allocated', 'SN-APL-M3MAX-001', CURRENT_TIMESTAMP),
-('ast-02', 'AF-0002', 'MacBook Pro M3 Max (16-inch, 64GB RAM, 2TB SSD)', 'cat-1', 'Good', 'Cloud Pod 4A', 'ENG-CLOUD', 'Allocated', 'SN-APL-M3MAX-002', CURRENT_TIMESTAMP),
-('ast-03', 'AF-0003', 'MacBook Pro M3 Pro (14-inch, 36GB RAM, 1TB SSD)', 'cat-1', 'Good', 'Cyber SOC Bay 2', 'SEC-CYBER', 'Allocated', 'SN-APL-M3PRO-003', CURRENT_TIMESTAMP),
-('ast-04', 'AF-0004', 'MacBook Pro M3 Pro (14-inch, 36GB RAM, 1TB SSD)', 'cat-1', 'Good', 'Cloud Pod 4B', 'ENG-CLOUD', 'Allocated', 'SN-APL-M3PRO-004', CURRENT_TIMESTAMP),
-('ast-05', 'AF-0005', 'Dell Precision 7780 Mobile Workstation (i9, 128GB, RTX 5000)', 'cat-1', 'New', 'Broadcast Editing Suite 1', 'OPS-MEDIA', 'Allocated', 'SN-DELL-PREC-005', CURRENT_TIMESTAMP),
-('ast-06', 'AF-0006', 'Dell Precision 7780 Mobile Workstation (i9, 128GB, RTX 5000)', 'cat-1', 'Good', 'Broadcast Editing Suite 2', 'OPS-MEDIA', 'Allocated', 'SN-DELL-PREC-006', CURRENT_TIMESTAMP),
-('ast-07', 'AF-0007', 'Lenovo ThinkPad X1 Carbon Gen 11 (i7, 32GB RAM)', 'cat-1', 'Good', 'Executive Suite 301', 'CORP-HQ', 'Allocated', 'SN-LNV-X1C-007', CURRENT_TIMESTAMP),
-('ast-08', 'AF-0008', 'Lenovo ThinkPad X1 Carbon Gen 11 (i7, 32GB RAM)', 'cat-1', 'Fair', 'Audit Field Desk 3', 'FIN-AUDIT', 'Allocated', 'SN-LNV-X1C-008', CURRENT_TIMESTAMP),
-('ast-09', 'AF-0009', 'Dell XPS 15 OLED Laptop (i9, 32GB RAM)', 'cat-1', 'Good', 'Priya Desk 4B', 'IT-GLOBAL', 'Allocated', 'SN-DELL-XPS-009', CURRENT_TIMESTAMP),
-('ast-10', 'AF-0010', 'Dell XPS 15 OLED Laptop (i9, 32GB RAM)', 'cat-1', 'Available', 'IT Buffer Pool Locker 12', 'IT-GLOBAL', 'Available', 'SN-DELL-XPS-010', CURRENT_TIMESTAMP),
-('ast-11', 'AF-0011', 'iPad Pro 12.9-inch M2 w/ Apple Pencil Gen 2', 'cat-1', 'Poor', 'IT Depot Locker 8', 'IT-GLOBAL', 'Allocated', 'SN-APL-IPAD-011', CURRENT_TIMESTAMP),
-('ast-12', 'AF-0012', 'Microsoft Surface Pro 9 (i7, 16GB, 512GB)', 'cat-1', 'Good', 'HR Interview Pod B', 'HR-PEOPLE', 'Allocated', 'SN-MSFT-SURF-012', CURRENT_TIMESTAMP),
-
--- Broadcast & Media (8 Items)
-('ast-13', 'AF-0101', 'Sony FX6 Full-Frame Cinema Camera Kit w/ 24-105mm G Lens', 'cat-2', 'Good', 'Media Studio 1 - Camera Locker', 'OPS-MEDIA', 'Available', 'SN-SNY-FX6-101', CURRENT_TIMESTAMP),
-('ast-14', 'AF-0102', 'Sony FX6 Full-Frame Cinema Camera Kit w/ 24-105mm G Lens', 'cat-2', 'Good', 'Media Studio 2 - Camera Locker', 'OPS-MEDIA', 'Allocated', 'SN-SNY-FX6-102', CURRENT_TIMESTAMP),
-('ast-15', 'AF-0103', 'RED V-RAPTOR 8K VV Cinema Camera Body', 'cat-2', 'New', 'High-Security Vault 1', 'OPS-MEDIA', 'Available', 'SN-RED-VRAP-103', CURRENT_TIMESTAMP),
-('ast-16', 'AF-0104', 'ARRI SkyPanel S60-C LED Softlight System', 'cat-2', 'Fair', 'Studio Maintenance Bay', 'OPS-MEDIA', 'Under Maintenance', 'SN-ARRI-S60-104', CURRENT_TIMESTAMP),
-('ast-17', 'AF-0105', 'ARRI SkyPanel S60-C LED Softlight System', 'cat-2', 'Good', 'Media Studio 1 - Overhead Grid', 'OPS-MEDIA', 'Available', 'SN-ARRI-S60-105', CURRENT_TIMESTAMP),
-('ast-18', 'AF-0106', 'Sennheiser MKH 416 Shotgun Microphone Kit', 'cat-2', 'Damaged', 'Sound Locker 3 Flagged Bin', 'OPS-MEDIA', 'Lost', 'SN-SNN-MKH-106', CURRENT_TIMESTAMP),
-('ast-19', 'AF-0107', 'Sennheiser MKH 416 Shotgun Microphone Kit', 'cat-2', 'Good', 'Sound Locker 1', 'OPS-MEDIA', 'Available', 'SN-SNN-MKH-107', CURRENT_TIMESTAMP),
-('ast-20', 'AF-0108', 'Blackmagic ATEM Constellation 8K Live Switcher', 'cat-2', 'Good', 'Master Control Room A', 'OPS-MEDIA', 'Available', 'SN-BMD-ATEM-108', CURRENT_TIMESTAMP),
-
--- Data Center & Network (8 Items)
-('ast-21', 'AF-0201', 'Dell PowerEdge R750 Rack Server (Dual Xeon Gold 6338, 512GB RAM)', 'cat-3', 'New', 'Data Center Row C - Rack 14', 'ENG-CLOUD', 'Available', 'SN-DELL-R750-201', CURRENT_TIMESTAMP),
-('ast-22', 'AF-0202', 'Dell PowerEdge R750 Rack Server (Dual Xeon Gold 6338, 512GB RAM)', 'cat-3', 'Good', 'Data Center Row C - Rack 15', 'ENG-CLOUD', 'Allocated', 'SN-DELL-R750-202', CURRENT_TIMESTAMP),
-('ast-23', 'AF-0203', 'Cisco Catalyst 9300 48-Port PoE+ Enterprise Switch', 'cat-3', 'Good', 'Network Closet 2A', 'IT-GLOBAL', 'Allocated', 'SN-CSC-9300-203', CURRENT_TIMESTAMP),
-('ast-24', 'AF-0204', 'Cisco Catalyst 9300 48-Port PoE+ Enterprise Switch', 'cat-3', 'Fair', 'IT Repair Depot Bay 4', 'IT-GLOBAL', 'Under Maintenance', 'SN-CSC-9300-204', CURRENT_TIMESTAMP),
-('ast-25', 'AF-0205', 'Palo Alto PA-3410 Next-Generation Firewall Appliance', 'cat-3', 'Good', 'SOC Core Network Rack 1', 'SEC-CYBER', 'Allocated', 'SN-PA-3410-205', CURRENT_TIMESTAMP),
-('ast-26', 'AF-0206', 'Fortinet FortiGate 200F Enterprise Security Gateway', 'cat-3', 'Good', 'Data Center Core Perimeter', 'SEC-CYBER', 'Allocated', 'SN-FGT-200F-206', CURRENT_TIMESTAMP),
-('ast-27', 'AF-0207', 'APC Smart-UPS RT 10,000VA Online Battery Backup System', 'cat-3', 'Good', 'Data Center Row C - Power Distribution', 'IT-GLOBAL', 'Allocated', 'SN-APC-10KVA-207', CURRENT_TIMESTAMP),
-('ast-28', 'AF-0208', 'Synology FlashStation FS3410 All-Flash SAN Storage (100TB TBW)', 'cat-3', 'Good', 'Cloud Core Storage Rack 2', 'ENG-CLOUD', 'Allocated', 'SN-SYN-FS3410-208', CURRENT_TIMESTAMP),
-
--- Ergonomic Furniture & Executive (6 Items)
-('ast-29', 'AF-0301', 'Herman Miller Aeron Ergonomic Task Chair (Size B, Onyx)', 'cat-4', 'Good', 'Executive Suite 302', 'CORP-HQ', 'Allocated', 'SN-HM-AERON-301', CURRENT_TIMESTAMP),
-('ast-30', 'AF-0302', 'Herman Miller Aeron Ergonomic Task Chair (Size B, Onyx)', 'cat-4', 'Good', 'SOC Command Deck Console 1', 'SEC-CYBER', 'Allocated', 'SN-HM-AERON-302', CURRENT_TIMESTAMP),
-('ast-31', 'AF-0303', 'Steelcase Gesture Ergonomic Office Chair w/ Headrest', 'cat-4', 'Good', 'Cloud Engineering Pod 4', 'ENG-CLOUD', 'Allocated', 'SN-STC-GEST-303', CURRENT_TIMESTAMP),
-('ast-32', 'AF-0304', 'Steelcase Gesture Ergonomic Office Chair w/ Headrest', 'cat-4', 'New', 'HR Director Suite 205', 'HR-PEOPLE', 'Allocated', 'SN-STC-GEST-304', CURRENT_TIMESTAMP),
-('ast-33', 'AF-0305', 'Uplift V2 Commercial Height-Adjustable Standing Desk (72x30)', 'cat-4', 'Good', 'IT Global Engineering Cubicle 14', 'IT-GLOBAL', 'Allocated', 'SN-UPL-V2-305', CURRENT_TIMESTAMP),
-('ast-34', 'AF-0306', 'Conference Room Modular Executive Table (16-Seat Walnut)', 'cat-4', 'Good', 'Boardroom A Main Floor', 'CORP-HQ', 'Allocated', 'SN-CNF-TBL-306', CURRENT_TIMESTAMP),
-
--- Fleet Vehicles & Lab Instrumentation (6 Items)
-('ast-35', 'AF-V001', 'Ford Transit Custom Utility Van 4WD (Equipped Mobile Unit)', 'cat-5', 'Good', 'Underground Garage Bay 4', 'OPS-MEDIA', 'Available', 'SN-VAN-TRANSIT-001', CURRENT_TIMESTAMP),
-('ast-36', 'AF-V002', 'Toyota Hilux Double Cab 4x4 Field Equipment Truck', 'cat-5', 'Fair', 'Fleet Maintenance Workshop Bay 1', 'LOG-SUPPLY', 'Under Maintenance', 'SN-TRK-HILUX-002', CURRENT_TIMESTAMP),
-('ast-37', 'AF-V003', 'Mercedes-Benz Sprinter 3500 High-Roof Broadcast Satellite Van', 'cat-5', 'Good', 'Underground Garage Bay 1 - Secure', 'OPS-MEDIA', 'Allocated', 'SN-VAN-SPRINT-003', CURRENT_TIMESTAMP),
-('ast-38', 'AF-0401', 'Fluke Networks DSX-8000 CableAnalyzer Pro Certification Kit', 'cat-6', 'Good', 'Network Diagnostic Depot Box 2', 'IT-GLOBAL', 'Available', 'SN-FLK-DSX8K-401', CURRENT_TIMESTAMP),
-('ast-39', 'AF-0402', 'Tektronix MSO64 4-Channel Mixed Signal Oscilloscope (8 GHz)', 'cat-6', 'Fair', 'Hardware Calibration Lab Bench 3', 'ENG-CLOUD', 'Under Maintenance', 'SN-TEK-MSO64-402', CURRENT_TIMESTAMP),
-('ast-40', 'AF-0403', 'FLIR E96 Advanced Thermal Imaging Camera System', 'cat-6', 'Good', 'Facility Safety Depot Locker 4', 'LOG-SUPPLY', 'Allocated', 'SN-FLIR-E96-403', CURRENT_TIMESTAMP);
+INSERT INTO assets (id, asset_tag, name, category, category_id, status, condition, location, department_id, current_assignee_id, serial_number, is_bookable, purchase_cost, purchase_date) VALUES
+('a0000000-0000-0000-0000-000000000001', 'AF-0001', 'MacBook Pro M3 Max (16-inch, 64GB RAM, 2TB SSD)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'New'::asset_condition, 'Server Depot Rack 1', '02222222-2222-4222-8222-222222222222', 'f0000000-0000-0000-0000-000000000004', 'SN-APL-M3MAX-001', false, 3500.00, '2026-03-01'),
+('a0000000-0000-0000-0000-000000000002', 'AF-0002', 'MacBook Pro M3 Max (16-inch, 64GB RAM, 2TB SSD)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'Cloud Pod 4A', '05555555-5555-4555-8555-555555555555', 'f0000000-0000-0000-0000-000000000010', 'SN-APL-M3MAX-002', false, 3500.00, '2026-03-01'),
+('a0000000-0000-0000-0000-000000000003', 'AF-0003', 'MacBook Pro M3 Pro (14-inch, 36GB RAM, 1TB SSD)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'Cyber SOC Bay 2', '07777777-7777-4777-8777-777777777777', 'f0000000-0000-0000-0000-000000000005', 'SN-APL-M3PRO-003', false, 2500.00, '2026-03-01'),
+('a0000000-0000-0000-0000-000000000004', 'AF-0004', 'MacBook Pro M3 Pro (14-inch, 36GB RAM, 1TB SSD)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'Cloud Pod 4B', '05555555-5555-4555-8555-555555555555', 'f0000000-0000-0000-0000-000000000011', 'SN-APL-M3PRO-004', false, 2500.00, '2026-03-01'),
+('a0000000-0000-0000-0000-000000000005', 'AF-0005', 'Dell Precision 7780 Mobile Workstation (i9, 128GB, RTX 5000)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'New'::asset_condition, 'Broadcast Editing Suite 1', '03333333-3333-4333-8333-333333333333', 'f3333333-3333-4333-8333-333333333333', 'SN-DELL-PREC-005', false, 4500.00, '2026-04-01'),
+('a0000000-0000-0000-0000-000000000006', 'AF-0006', 'Dell Precision 7780 Mobile Workstation (i9, 128GB, RTX 5000)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'Broadcast Editing Suite 2', '03333333-3333-4333-8333-333333333333', 'f0000000-0000-0000-0000-000000000009', 'SN-DELL-PREC-006', false, 4500.00, '2026-04-01'),
+('a0000000-0000-0000-0000-000000000007', 'AF-0007', 'Lenovo ThinkPad X1 Carbon Gen 11 (i7, 32GB RAM)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'Executive Suite 301', '01111111-1111-4111-8111-111111111111', 'f1111111-1111-4111-8111-111111111111', 'SN-LNV-X1C-007', false, 2000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000008', 'AF-0008', 'Lenovo ThinkPad X1 Carbon Gen 11 (i7, 32GB RAM)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Fair'::asset_condition, 'Audit Field Desk 3', '04444444-4444-4444-8444-444444444444', 'f0000000-0000-0000-0000-000000000015', 'SN-LNV-X1C-008', false, 2000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000009', 'AF-0009', 'Dell XPS 15 OLED Laptop (i9, 32GB RAM)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'Priya Desk 4B', '02222222-2222-4222-8222-222222222222', 'f2222222-2222-4222-8222-222222222222', 'SN-DELL-XPS-009', false, 2200.00, '2026-01-15'),
+('a0000000-0000-0000-0000-000000000010', 'AF-0010', 'Dell XPS 15 OLED Laptop (i9, 32GB RAM)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Available'::asset_status, 'Good'::asset_condition, 'IT Buffer Pool Locker 12', '02222222-2222-4222-8222-222222222222', NULL, 'SN-DELL-XPS-010', false, 2200.00, '2026-01-15'),
+('a0000000-0000-0000-0000-000000000011', 'AF-0011', 'iPad Pro 12.9-inch M2 w/ Apple Pencil Gen 2', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Poor'::asset_condition, 'IT Depot Locker 8', '02222222-2222-4222-8222-222222222222', 'f4444444-4444-4444-8444-444444444444', 'SN-APL-IPAD-011', false, 1200.00, '2025-10-01'),
+('a0000000-0000-0000-0000-000000000012', 'AF-0012', 'Microsoft Surface Pro 9 (i7, 16GB, 512GB)', 'Electronics', 'c0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Good'::asset_condition, 'HR Interview Pod B', '08888888-8888-4888-8888-888888888888', 'f0000000-0000-0000-0000-000000000016', 'SN-MSFT-SURF-012', false, 1500.00, '2025-10-01'),
+('a0000000-0000-0000-0000-000000000013', 'AF-0101', 'Sony FX6 Full-Frame Cinema Camera Kit w/ 24-105mm G Lens', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Available'::asset_status, 'Good'::asset_condition, 'Media Studio 1 - Camera Locker', '03333333-3333-4333-8333-333333333333', NULL, 'SN-SNY-FX6-101', true, 6000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000014', 'AF-0102', 'Sony FX6 Full-Frame Cinema Camera Kit w/ 24-105mm G Lens', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Allocated'::asset_status, 'Good'::asset_condition, 'Media Studio 2 - Camera Locker', '03333333-3333-4333-8333-333333333333', 'f0000000-0000-0000-0000-000000000014', 'SN-SNY-FX6-102', true, 6000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000015', 'AF-0103', 'RED V-RAPTOR 8K VV Cinema Camera Body', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Available'::asset_status, 'New'::asset_condition, 'High-Security Vault 1', '03333333-3333-4333-8333-333333333333', NULL, 'SN-RED-VRAP-103', true, 25000.00, '2026-01-01'),
+('a0000000-0000-0000-0000-000000000016', 'AF-0104', 'ARRI SkyPanel S60-C LED Softlight System', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Under Maintenance'::asset_status, 'Fair'::asset_condition, 'Studio Maintenance Bay', '03333333-3333-4333-8333-333333333333', NULL, 'SN-ARRI-S60-104', false, 6500.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000017', 'AF-0105', 'ARRI SkyPanel S60-C LED Softlight System', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Available'::asset_status, 'Good'::asset_condition, 'Media Studio 1 - Overhead Grid', '03333333-3333-4333-8333-333333333333', NULL, 'SN-ARRI-S60-105', false, 6500.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000018', 'AF-0106', 'Sennheiser MKH 416 Shotgun Microphone Kit', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Lost'::asset_status, 'Damaged'::asset_condition, 'Sound Locker 3 Flagged Bin', '03333333-3333-4333-8333-333333333333', NULL, 'SN-SNN-MKH-106', false, 1000.00, '2024-05-01'),
+('a0000000-0000-0000-0000-000000000019', 'AF-0107', 'Sennheiser MKH 416 Shotgun Microphone Kit', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Available'::asset_status, 'Good'::asset_condition, 'Sound Locker 1', '03333333-3333-4333-8333-333333333333', NULL, 'SN-SNN-MKH-107', false, 1000.00, '2024-05-01'),
+('a0000000-0000-0000-0000-000000000020', 'AF-0108', 'Blackmagic ATEM Constellation 8K Live Switcher', 'Production Equipment', 'c0000000-0000-0000-0000-000000000002', 'Available'::asset_status, 'Good'::asset_condition, 'Master Control Room A', '03333333-3333-4333-8333-333333333333', NULL, 'SN-BMD-ATEM-108', false, 10000.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000021', 'AF-0201', 'Dell PowerEdge R750 Rack Server (Dual Xeon Gold 6338, 512GB RAM)', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Available'::asset_status, 'New'::asset_condition, 'Data Center Row C - Rack 14', '05555555-5555-4555-8555-555555555555', NULL, 'SN-DELL-R750-201', false, 12000.00, '2026-01-15'),
+('a0000000-0000-0000-0000-000000000022', 'AF-0202', 'Dell PowerEdge R750 Rack Server (Dual Xeon Gold 6338, 512GB RAM)', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Good'::asset_condition, 'Data Center Row C - Rack 15', '05555555-5555-4555-8555-555555555555', 'f0000000-0000-0000-0000-000000000019', 'SN-DELL-R750-202', false, 12000.00, '2026-01-15'),
+('a0000000-0000-0000-0000-000000000023', 'AF-0203', 'Cisco Catalyst 9300 48-Port PoE+ Enterprise Switch', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Good'::asset_condition, 'Network Closet 2A', '02222222-2222-4222-8222-222222222222', 'f2222222-2222-4222-8222-222222222222', 'SN-CSC-9300-203', false, 3500.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000024', 'AF-0204', 'Cisco Catalyst 9300 48-Port PoE+ Enterprise Switch', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Under Maintenance'::asset_status, 'Fair'::asset_condition, 'IT Repair Depot Bay 4', '02222222-2222-4222-8222-222222222222', NULL, 'SN-CSC-9300-204', false, 3500.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000025', 'AF-0205', 'Palo Alto PA-3410 Next-Generation Firewall Appliance', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Good'::asset_condition, 'SOC Core Network Rack 1', '07777777-7777-4777-8777-777777777777', 'f0000000-0000-0000-0000-000000000012', 'SN-PA-3410-205', false, 15000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000026', 'AF-0206', 'Fortinet FortiGate 200F Enterprise Security Gateway', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Good'::asset_condition, 'Data Center Core Perimeter', '07777777-7777-4777-8777-777777777777', 'f0000000-0000-0000-0000-000000000020', 'SN-FGT-200F-206', false, 8000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000027', 'AF-0207', 'APC Smart-UPS RT 10,000VA Online Battery Backup System', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Good'::asset_condition, 'Data Center Row C - Power Distribution', '02222222-2222-4222-8222-222222222222', 'f2222222-2222-4222-8222-222222222222', 'SN-APC-10KVA-207', false, 5000.00, '2024-11-20'),
+('a0000000-0000-0000-0000-000000000028', 'AF-0208', 'Synology FlashStation FS3410 All-Flash SAN Storage (100TB TBW)', 'Network Infrastructure', 'c0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Good'::asset_condition, 'Cloud Core Storage Rack 2', '05555555-5555-4555-8555-555555555555', 'f0000000-0000-0000-0000-000000000010', 'SN-SYN-FS3410-208', false, 9500.00, '2025-03-10'),
+('a0000000-0000-0000-0000-000000000029', 'AF-0301', 'Herman Miller Aeron Ergonomic Task Chair (Size B, Onyx)', 'Furniture', 'c0000000-0000-0000-0000-000000000004', 'Allocated'::asset_status, 'Good'::asset_condition, 'Executive Suite 302', '01111111-1111-4111-8111-111111111111', 'f1111111-1111-4111-8111-111111111111', 'SN-HM-AERON-301', false, 1400.00, '2024-01-15'),
+('a0000000-0000-0000-0000-000000000030', 'AF-0302', 'Herman Miller Aeron Ergonomic Task Chair (Size B, Onyx)', 'Furniture', 'c0000000-0000-0000-0000-000000000004', 'Allocated'::asset_status, 'Good'::asset_condition, 'SOC Command Deck Console 1', '07777777-7777-4777-8777-777777777777', 'f0000000-0000-0000-0000-000000000012', 'SN-HM-AERON-302', false, 1400.00, '2024-01-15'),
+('a0000000-0000-0000-0000-000000000031', 'AF-0303', 'Steelcase Gesture Ergonomic Office Chair w/ Headrest', 'Furniture', 'c0000000-0000-0000-0000-000000000004', 'Allocated'::asset_status, 'Good'::asset_condition, 'Cloud Engineering Pod 4', '05555555-5555-4555-8555-555555555555', 'f0000000-0000-0000-0000-000000000011', 'SN-STC-GEST-303', false, 1300.00, '2024-01-15'),
+('a0000000-0000-0000-0000-000000000032', 'AF-0304', 'Steelcase Gesture Ergonomic Office Chair w/ Headrest', 'Furniture', 'c0000000-0000-0000-0000-000000000004', 'Allocated'::asset_status, 'New'::asset_condition, 'HR Director Suite 205', '08888888-8888-4888-8888-888888888888', 'f0000000-0000-0000-0000-000000000016', 'SN-STC-GEST-304', false, 1300.00, '2024-01-15'),
+('a0000000-0000-0000-0000-000000000033', 'AF-0305', 'Uplift V2 Commercial Height-Adjustable Standing Desk (72x30)', 'Furniture', 'c0000000-0000-0000-0000-000000000004', 'Allocated'::asset_status, 'Good'::asset_condition, 'IT Global Engineering Cubicle 14', '02222222-2222-4222-8222-222222222222', 'f2222222-2222-4222-8222-222222222222', 'SN-UPL-V2-305', false, 950.00, '2024-01-15'),
+('a0000000-0000-0000-0000-000000000034', 'AF-0306', 'Executive Boardroom A Table & Chair Set (16-Seat Walnut)', 'Furniture', 'c0000000-0000-0000-0000-000000000004', 'Available'::asset_status, 'Good'::asset_condition, 'Boardroom A Main Floor', '01111111-1111-4111-8111-111111111111', NULL, 'SN-CNF-TBL-306', true, 8000.00, '2023-05-10'),
+('a0000000-0000-0000-0000-000000000035', 'AF-V001', 'Ford Transit Custom Utility Van 4WD (Equipped Mobile Unit)', 'Vehicles', 'c0000000-0000-0000-0000-000000000005', 'Available'::asset_status, 'Good'::asset_condition, 'Underground Garage Bay 4', '03333333-3333-4333-8333-333333333333', NULL, 'SN-VAN-TRANSIT-001', true, 45000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000036', 'AF-V002', 'Toyota Hilux Double Cab 4x4 Field Equipment Truck', 'Vehicles', 'c0000000-0000-0000-0000-000000000005', 'Under Maintenance'::asset_status, 'Fair'::asset_condition, 'Fleet Maintenance Workshop Bay 1', '06666666-6666-4666-8666-666666666666', NULL, 'SN-TRK-HILUX-002', true, 38000.00, '2024-05-01'),
+('a0000000-0000-0000-0000-000000000037', 'AF-V003', 'Mercedes-Benz Sprinter 3500 High-Roof Broadcast Satellite Van', 'Vehicles', 'c0000000-0000-0000-0000-000000000005', 'Allocated'::asset_status, 'Good'::asset_condition, 'Underground Garage Bay 1 - Secure', '03333333-3333-4333-8333-333333333333', 'f3333333-3333-4333-8333-333333333333', 'SN-VAN-SPRINT-003', true, 75000.00, '2025-06-01'),
+('a0000000-0000-0000-0000-000000000038', 'AF-0401', 'Fluke Networks DSX-8000 CableAnalyzer Pro Certification Kit', 'A/V Equipment', 'c0000000-0000-0000-0000-000000000006', 'Available'::asset_status, 'Good'::asset_condition, 'Network Diagnostic Depot Box 2', '02222222-2222-4222-8222-222222222222', NULL, 'SN-FLK-DSX8K-401', false, 12000.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000039', 'AF-0402', 'Tektronix MSO64 4-Channel Mixed Signal Oscilloscope (8 GHz)', 'A/V Equipment', 'c0000000-0000-0000-0000-000000000006', 'Under Maintenance'::asset_status, 'Fair'::asset_condition, 'Hardware Calibration Lab Bench 3', '05555555-5555-4555-8555-555555555555', NULL, 'SN-TEK-MSO64-402', false, 18000.00, '2025-01-15'),
+('a0000000-0000-0000-0000-000000000040', 'AF-0403', 'FLIR E96 Advanced Thermal Imaging Camera System', 'A/V Equipment', 'c0000000-0000-0000-0000-000000000006', 'Allocated'::asset_status, 'Good'::asset_condition, 'Facility Safety Depot Locker 4', '06666666-6666-4666-8666-666666666666', 'f0000000-0000-0000-0000-000000000013', 'SN-FLIR-E96-403', false, 9500.00, '2025-01-15');
 
 -- 5. ASSET ALLOCATIONS (15 Historical & Active Records)
-INSERT INTO asset_allocations (allocation_id, asset_id, user_id, allocated_by, allocation_date, expected_return_date, actual_return_date, return_condition, notes) VALUES
-('alloc-01', 'ast-01', 'usr-04', 'Sriram Admin', '2026-06-01', '2026-12-31', NULL, NULL, 'Assigned for Kubernetes core architecture development'),
-('alloc-02', 'ast-02', 'usr-10', 'Alex Mercer', '2026-06-10', '2026-11-30', NULL, NULL, 'Primary developer workstation'),
-('alloc-03', 'ast-03', 'usr-05', 'Sriram Admin', '2026-05-15', '2026-12-31', NULL, NULL, 'SOC Lead primary defense laptop'),
-('alloc-04', 'ast-04', 'usr-11', 'Alex Mercer', '2026-06-15', '2026-11-30', NULL, NULL, 'Cloud devops workstation'),
-('alloc-05', 'ast-05', 'usr-03', 'Rajesh Kumar', '2026-06-01', '2026-10-31', NULL, NULL, '4K video rendering and color grading suite workstation'),
-('alloc-06', 'ast-06', 'usr-09', 'Rajesh Kumar', '2026-06-05', '2026-10-31', NULL, NULL, 'Remote editing mobile workstation'),
-('alloc-07', 'ast-07', 'usr-01', 'Sriram Admin', '2026-01-15', '2026-12-31', NULL, NULL, 'Executive management system access'),
-('alloc-08', 'ast-08', 'usr-15', 'Sriram Admin', '2026-03-01', '2026-09-30', NULL, NULL, 'Audit field workstation'),
-('alloc-09', 'ast-09', 'usr-02', 'Sriram Admin', '2026-04-01', '2026-12-31', NULL, NULL, 'IT asset management primary laptop'),
--- HIGH PRIORITY OVERDUE ALLOCATIONS (For Screen 2 Red Highlight Box)
-('alloc-10', 'ast-11', 'usr-08', 'Priya Sharma', '2026-05-01', '2026-07-08', NULL, NULL, '🚨 OVERDUE: Field tablet loaned to Ananya Iyer for off-site inventory check. Past due 4 days!'),
-('alloc-11', 'ast-14', 'usr-14', 'Rajesh Kumar', '2026-06-20', '2026-07-10', NULL, NULL, '🚨 OVERDUE: Sony FX6 loaned for weekend commercial shoot. Past due 2 days!'),
-('alloc-12', 'ast-22', 'usr-19', 'Alex Mercer', '2026-06-01', '2026-12-31', NULL, NULL, 'Dedicated lab server for AI model training'),
-('alloc-13', 'ast-29', 'usr-01', 'Sriram Admin', '2026-01-01', '2026-12-31', NULL, NULL, 'Executive office chair'),
-('alloc-14', 'ast-37', 'usr-03', 'Sriram Admin', '2026-06-01', '2026-12-31', NULL, NULL, 'Permanent mobile broadcast satellite vehicle'),
-('alloc-15', 'ast-40', 'usr-13', 'Marcus Vance', '2026-06-15', '2026-12-31', NULL, NULL, 'Logistics facility thermal inspection camera');
+INSERT INTO asset_allocations (id, asset_id, allocated_to_user_id, allocated_by_user_id, allocated_at, expected_return_date, returned_at, returned_condition, return_checkin_notes, is_active) VALUES
+('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000004', 'f1111111-1111-4111-8111-111111111111', '2026-06-01 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000004', '2026-06-10 09:00:00+00', '2026-11-30 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000005', 'f1111111-1111-4111-8111-111111111111', '2026-05-15 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000011', 'f0000000-0000-0000-0000-000000000004', '2026-06-15 09:00:00+00', '2026-11-30 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'f3333333-3333-4333-8333-333333333333', 'f3333333-3333-4333-8333-333333333333', '2026-06-01 09:00:00+00', '2026-10-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000009', 'f3333333-3333-4333-8333-333333333333', '2026-06-05 09:00:00+00', '2026-10-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000007', 'f1111111-1111-4111-8111-111111111111', 'f1111111-1111-4111-8111-111111111111', '2026-01-15 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000015', 'f1111111-1111-4111-8111-111111111111', '2026-03-01 09:00:00+00', '2026-09-30 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000009', 'f2222222-2222-4222-8222-222222222222', 'f1111111-1111-4111-8111-111111111111', '2026-04-01 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000011', 'f4444444-4444-4444-8444-444444444444', 'f2222222-2222-4222-8222-222222222222', '2026-05-01 09:00:00+00', CURRENT_TIMESTAMP - INTERVAL '4 days', NULL, NULL, '🚨 OVERDUE: Field tablet loaned to Ananya Iyer for off-site inventory check. Past due 4 days!', true),
+('b0000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000014', 'f0000000-0000-0000-0000-000000000014', 'f3333333-3333-4333-8333-333333333333', '2026-06-20 09:00:00+00', CURRENT_TIMESTAMP - INTERVAL '2 days', NULL, NULL, '🚨 OVERDUE: Sony FX6 loaned for weekend commercial shoot. Past due 2 days!', true),
+('b0000000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000022', 'f0000000-0000-0000-0000-000000000019', 'f0000000-0000-0000-0000-000000000004', '2026-06-01 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000029', 'f1111111-1111-4111-8111-111111111111', 'f1111111-1111-4111-8111-111111111111', '2026-01-01 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000037', 'f3333333-3333-4333-8333-333333333333', 'f1111111-1111-4111-8111-111111111111', '2026-06-01 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true),
+('b0000000-0000-0000-0000-000000000015', 'a0000000-0000-0000-0000-000000000040', 'f0000000-0000-0000-0000-000000000013', 'f0000000-0000-0000-0000-000000000006', '2026-06-15 09:00:00+00', '2026-12-31 18:00:00+00', NULL, NULL, NULL, true);
 
--- 6. TRANSFER REQUESTS (3 Active Conflict Resolution Workflows)
-INSERT INTO transfer_requests (transfer_id, asset_id, current_holder_id, requested_by_id, transfer_reason, status, request_date) VALUES
-('trf-01', 'ast-09', 'usr-02', 'usr-17', 'Need Dell XPS OLED for 3D network topology modeling project.', 'pending', '2026-07-11'),
-('trf-02', 'ast-14', 'usr-14', 'usr-09', 'Overdue asset needed immediately for Studio 2 live sports broadcast setup.', 'pending', '2026-07-12'),
-('trf-03', 'ast-22', 'usr-19', 'usr-10', 'Transferring AI test server to secondary devops engineer for stress testing.', 'approved', '2026-07-09');
+-- Update assets state based on allocations
+UPDATE assets SET status = 'Allocated' WHERE id IN ('a0000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000014');
 
--- 7. RESOURCE BOOKINGS (8 Realistic Schedule Windows)
-INSERT INTO resource_bookings (booking_id, resource_name, user_id, start_time, end_time, purpose, status) VALUES
-('bk-01', 'Boardroom A (4K Video Conferencing)', 'usr-01', '2026-07-12 09:00:00', '2026-07-12 11:00:00', 'Executive Strategy Roadmap & Q3 Budget Review', 'confirmed'),
-('bk-02', 'Boardroom A (4K Video Conferencing)', 'usr-05', '2026-07-12 11:30:00', '2026-07-12 13:00:00', 'Global SOC Security Incident Response Briefing', 'confirmed'),
-('bk-03', 'Boardroom A (4K Video Conferencing)', 'usr-07', '2026-07-12 14:00:00', '2026-07-12 16:00:00', 'Executive Talent Leadership Workshop', 'confirmed'),
-('bk-04', 'Utility Van Ford Transit (AF-V001)', 'usr-03', '2026-07-12 13:00:00', '2026-07-12 18:00:00', 'On-Location Live Event Broadcast Setup at Downtown Arena', 'confirmed'),
-('bk-05', 'Utility Van Ford Transit (AF-V001)', 'usr-06', '2026-07-13 08:00:00', '2026-07-13 12:00:00', 'Regional Warehouse Hardware Transport & Deployment', 'confirmed'),
-('bk-06', 'Executive Suite B2 (Private Soundproof)', 'usr-04', '2026-07-12 10:00:00', '2026-07-12 12:00:00', 'Cloud Vendor Multi-Million Dollar SLA Negotiations', 'confirmed'),
-('bk-07', 'Diagnostic Lab Chamber 3 (RF Shielded)', 'usr-02', '2026-07-12 14:00:00', '2026-07-12 17:00:00', 'High-Frequency Oscilloscope Network Calibration', 'confirmed'),
-('bk-08', 'Boardroom A (4K Video Conferencing)', 'usr-03', '2026-07-13 10:00:00', '2026-07-13 12:00:00', 'Media Production Partners Quarterly Review', 'confirmed');
+-- 6. TRANSFER REQUESTS (3 Active Workflows)
+INSERT INTO transfer_requests (id, asset_id, requested_by, source_department_id, target_department_id, source_assignee_id, target_assignee_id, status, transfer_reason, created_at) VALUES
+('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000017', '02222222-2222-4222-8222-222222222222', '02222222-2222-4222-8222-222222222222', 'f2222222-2222-4222-8222-222222222222', 'f0000000-0000-0000-0000-000000000017', 'pending'::workflow_status, 'Need Dell XPS OLED for 3D network topology modeling project.', '2026-07-11 10:00:00+00'),
+('d0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000014', 'f0000000-0000-0000-0000-000000000009', '03333333-3333-4333-8333-333333333333', '03333333-3333-4333-8333-333333333333', 'f0000000-0000-0000-0000-000000000014', 'f0000000-0000-0000-0000-000000000009', 'pending'::workflow_status, 'Overdue asset needed immediately for Studio 2 live sports broadcast setup.', '2026-07-12 10:00:00+00'),
+('d0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000022', 'f0000000-0000-0000-0000-000000000010', '05555555-5555-4555-8555-555555555555', '05555555-5555-4555-8555-555555555555', 'f0000000-0000-0000-0000-000000000019', 'f0000000-0000-0000-0000-000000000010', 'approved'::workflow_status, 'Transferring AI test server to secondary devops engineer for stress testing.', '2026-07-09 10:00:00+00');
+
+-- 7. RESOURCE BOOKINGS (8 Schedule Windows)
+-- Executing bookings against assets
+INSERT INTO bookings (id, resource_id, user_id, start_time, end_time, purpose, status) VALUES
+('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000034', 'f1111111-1111-4111-8111-111111111111', '2026-07-12 09:00:00+00', '2026-07-12 11:00:00+00', 'Executive Strategy Roadmap & Q3 Budget Review', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000034', 'f0000000-0000-0000-0000-000000000005', '2026-07-12 11:30:00+00', '2026-07-12 13:00:00+00', 'Global SOC Security Incident Response Briefing', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000034', 'f0000000-0000-0000-0000-000000000007', '2026-07-12 14:00:00+00', '2026-07-12 16:00:00+00', 'Executive Talent Leadership Workshop', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000035', 'f3333333-3333-4333-8333-333333333333', '2026-07-12 13:00:00+00', '2026-07-12 18:00:00+00', 'On-Location Live Event Broadcast Setup at Downtown Arena', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000035', 'f0000000-0000-0000-0000-000000000006', '2026-07-13 08:00:00+00', '2026-07-13 12:00:00+00', 'Regional Warehouse Hardware Transport & Deployment', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000015', 'f0000000-0000-0000-0000-000000000004', '2026-07-12 10:00:00+00', '2026-07-12 12:00:00+00', 'Cloud Vendor Multi-Million Dollar SLA Negotiations', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000039', 'f2222222-2222-4222-8222-222222222222', '2026-07-12 14:00:00+00', '2026-07-12 17:00:00+00', 'High-Frequency Oscilloscope Network Calibration', 'confirmed'::booking_status),
+('e0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000034', 'f3333333-3333-4333-8333-333333333333', '2026-07-13 10:00:00+00', '2026-07-13 12:00:00+00', 'Media Production Partners Quarterly Review', 'confirmed'::booking_status);
 
 -- 8. MAINTENANCE REQUESTS (6 Active & Historical Repair Workflows)
-INSERT INTO maintenance_requests (request_id, asset_id, requested_by, priority_level, issue_title, detailed_description, status, estimated_cost, actual_cost, created_at) VALUES
-('mnt-01', 'ast-16', 'Rajesh Kumar', 'high', 'ARRI SkyPanel Power Ballast Thermal Shutdown', 'Driver ballast overheats after 45 minutes of continuous 100% output during studio filming.', 'in_progress', 650.00, NULL, '2026-07-10'),
-('mnt-02', 'ast-24', 'Priya Sharma', 'medium', 'Cisco Catalyst 9300 Fan Module 2 Failure Alarm', 'Switch reporting high RPM fluctuations and warning alerts on secondary cooling module.', 'in_progress', 420.00, NULL, '2026-07-11'),
-('mnt-03', 'ast-36', 'Marcus Vance', 'high', 'Toyota Hilux 4x4 Front Differential & Transmission Service', 'Heavy vibration noticed during off-road field transport. Scheduled for transmission overhaul.', 'in_progress', 2150.00, NULL, '2026-07-09'),
-('mnt-04', 'ast-39', 'Alex Mercer', 'high', 'Tektronix MSO64 Oscilloscope Channel 3 Attenuation Drift', 'Signal waveform showing +1.2dB calibration drift above 5GHz. Sent to lab for recertification.', 'in_progress', 1800.00, NULL, '2026-07-08'),
-('mnt-05', 'ast-11', 'Ananya Iyer', 'medium', 'iPad Pro Screen Digitizer Intermittent Edge Drop', 'Touch input drops near right bezel when using Apple Pencil in landscape mode.', 'pending', 280.00, NULL, '2026-07-11'),
-('mnt-06', 'ast-01', 'Sriram Admin', 'low', 'MacBook Pro Battery Health Check & Keyboard Clean', 'Routine annual preventive maintenance completed successfully.', 'resolved', 150.00, 145.00, '2026-06-20');
+INSERT INTO maintenance_requests (id, asset_id, requested_by, priority, issue_title, issue_description, status, estimated_cost, actual_cost, created_at) VALUES
+('fa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000016', 'f3333333-3333-4333-8333-333333333333', 'high'::priority_level, 'ARRI SkyPanel Power Ballast Thermal Shutdown', 'Driver ballast overheats after 45 minutes of continuous 100% output during studio filming.', 'in_progress'::workflow_status, 650.00, NULL, '2026-07-10 10:00:00+00'),
+('fa000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000024', 'f2222222-2222-4222-8222-222222222222', 'medium'::priority_level, 'Cisco Catalyst 9300 Fan Module 2 Failure Alarm', 'Switch reporting high RPM fluctuations and warning alerts on secondary cooling module.', 'in_progress'::workflow_status, 420.00, NULL, '2026-07-11 10:00:00+00'),
+('fa000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000036', 'f0000000-0000-0000-0000-000000000006', 'high'::priority_level, 'Toyota Hilux 4x4 Front Differential & Transmission Service', 'Heavy vibration noticed during off-road field transport. Scheduled for transmission overhaul.', 'in_progress'::workflow_status, 2150.00, NULL, '2026-07-09 10:00:00+00'),
+('fa000000-0000-0000-0000-000000000039', 'a0000000-0000-0000-0000-000000000039', 'f0000000-0000-0000-0000-000000000004', 'high'::priority_level, 'Tektronix MSO64 Oscilloscope Channel 3 Attenuation Drift', 'Signal waveform showing +1.2dB calibration drift above 5GHz. Sent to lab for recertification.', 'in_progress'::workflow_status, 1800.00, NULL, '2026-07-08 10:00:00+00'),
+('fa000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000011', 'f4444444-4444-4444-8444-444444444444', 'medium'::priority_level, 'iPad Pro Screen Digitizer Intermittent Edge Drop', 'Touch input drops near right bezel when using Apple Pencil in landscape mode.', 'pending'::workflow_status, 280.00, NULL, '2026-07-11 10:00:00+00'),
+('fa000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', 'f1111111-1111-4111-8111-111111111111', 'low'::priority_level, 'MacBook Pro Battery Health Check & Keyboard Clean', 'Routine annual preventive maintenance completed successfully.', 'resolved'::workflow_status, 150.00, 145.00, '2026-06-20 10:00:00+00');
+
+-- Update assets state for maintenance
+UPDATE assets SET status = 'Under Maintenance' WHERE id IN ('a0000000-0000-0000-0000-000000000016', 'a0000000-0000-0000-0000-000000000024', 'a0000000-0000-0000-0000-000000000036', 'a0000000-0000-0000-0000-000000000039');
 
 -- 9. AUDIT CYCLES (2 Comprehensive Global Verifications)
-INSERT INTO audit_cycles (cycle_id, title, department_scope, start_date, end_date, status) VALUES
-('aud-201', 'Q3 Global IT & Infrastructure Verification Audit', 'IT-GLOBAL, ENG-CLOUD, SEC-CYBER', '2026-07-01', '2026-07-15', 'In-Progress'),
-('aud-202', 'Annual Media Production Studio Equipment Audit', 'OPS-MEDIA', '2026-06-15', '2026-06-30', 'Closed');
+INSERT INTO audit_cycles (id, title, department_scope, start_date, end_date, status, created_by) VALUES
+('aa000000-0000-0000-0000-000000000001', 'Q3 Global IT & Infrastructure Verification Audit', '02222222-2222-4222-8222-222222222222', '2026-07-01', '2026-07-15', 'In-Progress'::audit_cycle_status, 'f1111111-1111-4111-8111-111111111111'),
+('aa000000-0000-0000-0000-000000000002', 'Annual Media Production Studio Equipment Audit', '03333333-3333-4333-8333-333333333333', '2026-06-15', '2026-06-30', 'Closed'::audit_cycle_status, 'f1111111-1111-4111-8111-111111111111');
 
--- 10. AUDIT RECORDS (12 Detailed Checklists across both Cycles)
-INSERT INTO audit_records (record_id, cycle_id, asset_id, baseline_status, verification_status, auditor_notes) VALUES
-('rec-01', 'aud-201', 'ast-01', 'Allocated', 'Verified', 'Verified laptop tag AF-0001 with Alex Mercer in Server Depot.'),
-('rec-02', 'aud-201', 'ast-03', 'Allocated', 'Verified', 'Verified in Cyber SOC Bay 2 with Elena Rostova.'),
-('rec-03', 'aud-201', 'ast-09', 'Allocated', 'Verified', 'Verified Dell XPS OLED on Priya Sharma desk.'),
-('rec-04', 'aud-201', 'ast-11', 'Allocated', 'Missing', '❌ NOT FOUND at Ananya Iyer desk. Marked as overdue return!'),
-('rec-05', 'aud-201', 'ast-21', 'Available', 'Verified', 'PowerEdge R750 inspected in Data Center Row C Rack 14.'),
-('rec-06', 'aud-201', 'ast-23', 'Allocated', 'Verified', 'Cisco Catalyst switch verified active in Network Closet 2A.'),
-('rec-07', 'aud-201', 'ast-38', 'Available', 'Verified', 'Fluke DSX-8000 certification kit verified in depot.'),
-('rec-08', 'aud-202', 'ast-13', 'Available', 'Verified', 'Sony FX6 Kit 101 verified complete in Studio 1 camera locker.'),
-('rec-09', 'aud-202', 'ast-15', 'Available', 'Verified', 'RED V-RAPTOR 8K camera verified inside High-Security Vault 1.'),
-('rec-10', 'aud-202', 'ast-16', 'Under Maintenance', 'Verified', 'ARRI SkyPanel confirmed in studio repair bay awaiting power ballast.'),
-('rec-11', 'aud-202', 'ast-18', 'Available', 'Missing', '❌ Sennheiser Shotgun Mic Kit not found in Sound Locker 3! Flagged during cycle.'),
-('rec-12', 'aud-202', 'ast-35', 'Available', 'Verified', 'Ford Transit Utility Van verified parked in Underground Garage Bay 4.');
+-- 10. AUDIT RECORDS (12 Detailed Checklists)
+INSERT INTO audit_records (id, audit_cycle_id, asset_id, baseline_status, baseline_location, verification_status, notes, auditor_id) VALUES
+('ab000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Allocated'::asset_status, 'Server Depot Rack 1', 'Verified'::audit_verification_status, 'Verified laptop tag AF-0001 with Alex Mercer in Server Depot.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000002', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', 'Allocated'::asset_status, 'Cyber SOC Bay 2', 'Verified'::audit_verification_status, 'Verified in Cyber SOC Bay 2 with Elena Rostova.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000003', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000009', 'Allocated'::asset_status, 'Priya Desk 4B', 'Verified'::audit_verification_status, 'Verified Dell XPS OLED on Priya Sharma desk.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000004', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000011', 'Allocated'::asset_status, 'IT Depot Locker 8', 'Missing'::audit_verification_status, '❌ NOT FOUND at Ananya Iyer desk. Marked as overdue return!', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000005', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000021', 'Available'::asset_status, 'Data Center Row C - Rack 14', 'Verified'::audit_verification_status, 'PowerEdge R750 inspected in Data Center Row C Rack 14.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000006', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000023', 'Allocated'::asset_status, 'Network Closet 2A', 'Verified'::audit_verification_status, 'Cisco Catalyst switch verified active in Network Closet 2A.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000007', 'aa000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000038', 'Available'::asset_status, 'Network Diagnostic Depot Box 2', 'Verified'::audit_verification_status, 'Fluke DSX-8000 certification kit verified in depot.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000008', 'aa000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000013', 'Available'::asset_status, 'Media Studio 1 - Camera Locker', 'Verified'::audit_verification_status, 'Sony FX6 Kit 101 verified complete in Studio 1 camera locker.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000009', 'aa000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000015', 'Available'::asset_status, 'High-Security Vault 1', 'Verified'::audit_verification_status, 'RED V-RAPTOR 8K camera verified inside High-Security Vault 1.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000010', 'aa000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000016', 'Under Maintenance'::asset_status, 'Studio Maintenance Bay', 'Verified'::audit_verification_status, 'ARRI SkyPanel confirmed in studio repair bay awaiting power ballast.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000011', 'aa000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000018', 'Lost'::asset_status, 'Sound Locker 3 Flagged Bin', 'Missing'::audit_verification_status, '❌ Sennheiser Shotgun Mic Kit not found in Sound Locker 3! Flagged during cycle.', 'f1111111-1111-4111-8111-111111111111'),
+('ab000000-0000-0000-0000-000000000012', 'aa000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000035', 'Available'::asset_status, 'Underground Garage Bay 4', 'Verified'::audit_verification_status, 'Ford Transit Utility Van verified parked in Underground Garage Bay 4.', 'f1111111-1111-4111-8111-111111111111');
 
 -- 11. ACTIVITY LOGS (15 Rich Enterprise Audit Trail Entries)
-INSERT INTO activity_logs (log_id, created_at, user_name, module_name, action_description, ip_address) VALUES
-('log-01', datetime('now', '-5 hours'), 'Sriram Admin', 'ASSETS', 'Registered 4 new MacBook Pro M3 Max/Pro laptops for Cloud & SOC engineering teams.', '10.0.1.15'),
-('log-02', datetime('now', '-4 hours'), 'Priya Sharma', 'ASSETS', 'Initiated annual calibration audit cycle aud-201 across all IT & Cloud divisions.', '10.0.2.44'),
-('log-03', datetime('now', '-4 hours'), 'Rajesh Kumar', 'BOOKINGS', 'Confirmed booking bk-04 for Utility Van Ford Transit for weekend stadium broadcast shoot.', '10.0.3.88'),
-('log-04', datetime('now', '-3 hours'), 'Alex Mercer', 'ASSETS', 'Approved transfer request trf-03 moving PowerEdge AI test server to secondary engineer.', '10.0.4.12'),
-('log-05', datetime('now', '-3 hours'), 'Marcus Vance', 'MAINTENANCE', 'Raised High-Priority repair request mnt-03 for Toyota Hilux transmission overhaul ($2,150).', '10.0.5.60'),
-('log-06', datetime('now', '-2 hours'), 'Elena Rostova', 'BOOKINGS', 'Confirmed booking bk-02 for Boardroom A for global SOC security briefing.', '10.0.6.21'),
-('log-07', datetime('now', '-2 hours'), 'Sriram Admin', 'ORG_SETUP', 'Promoted Priya Sharma to Asset Manager and Alex Mercer to Department Head (ENG-CLOUD).', '10.0.1.15'),
-('log-08', datetime('now', '-1 hours'), 'Priya Sharma', 'AUDIT', 'Marked iPad Pro AF-0011 as MISSING during Q3 verification audit aud-201.', '10.0.2.44'),
-('log-09', datetime('now', '-45 minutes'), 'Rajesh Kumar', 'MAINTENANCE', 'Raised High-Priority repair request mnt-01 for ARRI SkyPanel power ballast.', '10.0.3.88'),
-('log-10', datetime('now', '-30 minutes'), 'Ananya Iyer', 'ASSETS', 'Submitted maintenance ticket mnt-05 for iPad Pro screen digitizer responsiveness.', '10.0.2.99'),
-('log-11', datetime('now', '-20 minutes'), 'Sriram Admin', 'AUDIT', 'Closed Studio Audit aud-202. Auto-reconciled missing Sennheiser Mic AF-0108 to LOST status.', '10.0.1.15'),
-('log-12', datetime('now', '-15 minutes'), 'Vikram Mehta', 'ASSETS', 'Completed physical check-in return for Sony FX6 camera kit (Condition verified: Good).', '10.0.3.50'),
-('log-13', datetime('now', '-10 minutes'), 'Alex Mercer', 'ASSETS', 'Allocated Dell PowerEdge R750 Server AF-0202 to AI research workbench.', '10.0.4.12'),
-('log-14', datetime('now', '-5 minutes'), 'Sarah Jenkins', 'BOOKINGS', 'Booked Boardroom A for Executive Talent Workshop (14:00 - 16:00).', '10.0.7.19'),
-('log-15', datetime('now', '-1 minutes'), 'Sriram Admin', 'SYSTEM', 'Production dataset 005 loaded successfully with 40+ enterprise assets ($250,000+ valuation).', '127.0.0.1');
+INSERT INTO activity_logs (id, created_at, user_id, action, module, description, ip_address) VALUES
+('ac000000-0000-0000-0000-000000000001', CURRENT_TIMESTAMP - INTERVAL '5 hours', 'f1111111-1111-4111-8111-111111111111', 'REGISTER_ASSET', 'ASSETS', 'Registered 4 new MacBook Pro M3 Max/Pro laptops for Cloud & SOC engineering teams.', '10.0.1.15'),
+('ac000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '4 hours', 'f2222222-2222-4222-8222-222222222222', 'INITIATE_AUDIT', 'AUDITS', 'Initiated annual calibration audit cycle aa000000-0000-0000-0000-000000000001 across all IT & Cloud divisions.', '10.0.2.44'),
+('ac000000-0000-0000-0000-000000000003', CURRENT_TIMESTAMP - INTERVAL '4 hours', 'f3333333-3333-4333-8333-333333333333', 'CONFIRM_BOOKING', 'BOOKINGS', 'Confirmed booking e0000000-0000-0000-0000-000000000004 for Utility Van Ford Transit for weekend stadium broadcast shoot.', '10.0.3.88'),
+('ac000000-0000-0000-0000-000000000004', CURRENT_TIMESTAMP - INTERVAL '3 hours', 'f0000000-0000-0000-0000-000000000004', 'APPROVE_TRANSFER', 'ASSETS', 'Approved transfer request d0000000-0000-0000-0000-000000000003 moving PowerEdge AI test server to secondary engineer.', '10.0.4.12'),
+('ac000000-0000-0000-0000-000000000005', CURRENT_TIMESTAMP - INTERVAL '3 hours', 'f0000000-0000-0000-0000-000000000006', 'RAISE_MAINTENANCE_TICKET', 'MAINTENANCE', 'Raised High-Priority repair request fa000000-0000-0000-0000-000000000003 for Toyota Hilux transmission overhaul ($2,150).', '10.0.5.60'),
+('ac000000-0000-0000-0000-000000000006', CURRENT_TIMESTAMP - INTERVAL '2 hours', 'f0000000-0000-0000-0000-000000000005', 'CONFIRM_BOOKING', 'BOOKINGS', 'Confirmed booking e0000000-0000-0000-0000-000000000002 for Boardroom A for global SOC security briefing.', '10.0.6.21'),
+('ac000000-0000-0000-0000-000000000007', CURRENT_TIMESTAMP - INTERVAL '2 hours', 'f1111111-1111-4111-8111-111111111111', 'PROMOTE_USER', 'USERS', 'Promoted Priya Sharma to Asset Manager and Alex Mercer to Department Head (ENG-CLOUD).', '10.0.1.15'),
+('ac000000-0000-0000-0000-000000000008', CURRENT_TIMESTAMP - INTERVAL '1 hours', 'f2222222-2222-4222-8222-222222222222', 'FLAG_DISCREPANCY', 'AUDITS', 'Marked iPad Pro AF-0011 as MISSING during Q3 verification audit aa000000-0000-0000-0000-000000000001.', '10.0.2.44'),
+('ac000000-0000-0000-0000-000000000009', CURRENT_TIMESTAMP - INTERVAL '45 minutes', 'f3333333-3333-4333-8333-333333333333', 'RAISE_MAINTENANCE_TICKET', 'MAINTENANCE', 'Raised High-Priority repair request fa000000-0000-0000-0000-000000000001 for ARRI SkyPanel power ballast.', '10.0.3.88'),
+('ac000000-0000-0000-0000-000000000010', CURRENT_TIMESTAMP - INTERVAL '30 minutes', 'f4444444-4444-4444-8444-444444444444', 'RAISE_MAINTENANCE_TICKET', 'MAINTENANCE', 'Submitted maintenance ticket fa000000-0000-0000-0000-000000000005 for iPad Pro screen digitizer responsiveness.', '10.0.2.99'),
+('ac000000-0000-0000-0000-000000000011', CURRENT_TIMESTAMP - INTERVAL '20 minutes', 'f1111111-1111-4111-8111-111111111111', 'CLOSE_AUDIT', 'AUDITS', 'Closed Studio Audit aa000000-0000-0000-0000-000000000002. Auto-reconciled missing Sennheiser Mic AF-0108 to LOST status.', '10.0.1.15'),
+('ac000000-0000-0000-0000-000000000012', CURRENT_TIMESTAMP - INTERVAL '15 minutes', 'f0000000-0000-0000-0000-000000000009', 'SCAN_CHECKIN', 'ASSETS', 'Completed physical check-in return for Sony FX6 camera kit (Condition verified: Good).', '10.0.3.50'),
+('ac000000-0000-0000-0000-000000000013', CURRENT_TIMESTAMP - INTERVAL '10 minutes', 'f0000000-0000-0000-0000-000000000004', 'ALLOCATE_ASSET', 'ASSETS', 'Allocated Dell PowerEdge R750 Server AF-0202 to AI research workbench.', '10.0.4.12'),
+('ac000000-0000-0000-0000-000000000014', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'f0000000-0000-0000-0000-000000000016', 'BOOK_RESOURCE', 'BOOKINGS', 'Booked Boardroom A for Executive Talent Workshop (14:00 - 16:00).', '10.0.7.19'),
+('ac000000-0000-0000-0000-000000000015', CURRENT_TIMESTAMP - INTERVAL '1 minutes', 'f1111111-1111-4111-8111-111111111111', 'LOAD_SYSTEM_DATA', 'SYSTEM', 'Production dataset 005 loaded successfully with 40+ enterprise assets ($250,000+ valuation).', '127.0.0.1');
 
 -- 12. NOTIFICATIONS (5 Active Priority Alerts)
-INSERT INTO notifications (notification_id, title, message, is_read, created_at) VALUES
-('notif-01', '🚨 Overdue Return Alert', 'Ananya Iyer is overdue returning iPad Pro AF-0011 (Due: 2026-07-08). Asset marked as Missing in Q3 Audit.', 0, datetime('now', '-2 hours')),
-('notif-02', '🚨 Overdue Return Alert', 'Zoe Nakamura is overdue returning Sony FX6 Camera AF-0102 (Due: 2026-07-10).', 0, datetime('now', '-1 hours')),
-('notif-03', '🔧 High-Priority Repair Raised', 'Toyota Hilux 4x4 AF-V002 front differential & transmission overhaul requested ($2,150 estimated cost).', 0, datetime('now', '-45 minutes')),
-('notif-04', '⚠️ Verification Audit Flag', 'Q3 Global IT Verification Audit aud-201 has flagged 2 assets requiring manager reconciliation.', 0, datetime('now', '-30 minutes')),
-('notif-05', '📅 Executive Booking Reminder', 'Your booking for Boardroom A (Executive Strategy Roadmap) begins today at 09:00 AM.', 0, datetime('now', '-10 minutes'));
+INSERT INTO notifications (id, user_id, type, title, message, is_read, created_at) VALUES
+('ad000000-0000-0000-0000-000000000001', 'f2222222-2222-4222-8222-222222222222', 'OVERDUE_ALERT', '🚨 Overdue Return Alert', 'Ananya Iyer is overdue returning iPad Pro AF-0011 (Due: 2026-07-08). Asset marked as Missing in Q3 Audit.', false, CURRENT_TIMESTAMP - INTERVAL '2 hours'),
+('ad000000-0000-0000-0000-000000000002', 'f2222222-2222-4222-8222-222222222222', 'OVERDUE_ALERT', '🚨 Overdue Return Alert', 'Zoe Nakamura is overdue returning Sony FX6 Camera AF-0102 (Due: 2026-07-10).', false, CURRENT_TIMESTAMP - INTERVAL '1 hours'),
+('ad000000-0000-0000-0000-000000000003', 'f2222222-2222-4222-8222-222222222222', 'MAINTENANCE_APPROVED', '🔧 High-Priority Repair Raised', 'Toyota Hilux 4x4 AF-V002 front differential & transmission overhaul requested ($2,150 estimated cost).', false, CURRENT_TIMESTAMP - INTERVAL '45 minutes'),
+('ad000000-0000-0000-0000-000000000004', 'f2222222-2222-4222-8222-222222222222', 'AUDIT_DISCREPANCY', '⚠️ Verification Audit Flag', 'Q3 Global IT Verification Audit aa000000-0000-0000-0000-000000000001 has flagged 2 assets requiring manager reconciliation.', false, CURRENT_TIMESTAMP - INTERVAL '30 minutes'),
+('ad000000-0000-0000-0000-000000000005', 'f1111111-1111-4111-8111-111111111111', 'BOOKING_REMINDER', '📅 Executive Booking Reminder', 'Your booking for Boardroom A (Executive Strategy Roadmap) begins today at 09:00 AM.', false, CURRENT_TIMESTAMP - INTERVAL '10 minutes');
+
+COMMIT;

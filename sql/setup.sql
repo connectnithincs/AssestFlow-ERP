@@ -12,16 +12,16 @@ BEGIN;
 -- ============================================================================
 INSERT INTO departments (id, code, name, description, is_active)
 VALUES
-    ('d1111111-1111-4111-8111-111111111111', 'CORP-HQ', 'Executive Operations & Global HQ', 'Top-level corporate management', TRUE),
-    ('d2222222-2222-4222-8222-222222222222', 'IT-GLOBAL', 'Global Information Technology', 'Enterprise hardware, network, and cloud infrastructure', TRUE),
-    ('d3333333-3333-4333-8333-333333333333', 'OPS-MEDIA', 'Creative & Production Studio', 'A/V production, camera equipment, and broadcasting facilities', TRUE)
+    ('01111111-1111-4111-8111-111111111111', 'CORP-HQ', 'Executive Operations & Global HQ', 'Top-level corporate management', TRUE),
+    ('02222222-2222-4222-8222-222222222222', 'IT-GLOBAL', 'Global Information Technology', 'Enterprise hardware, network, and cloud infrastructure', TRUE),
+    ('03333333-3333-4333-8333-333333333333', 'OPS-MEDIA', 'Creative & Production Studio', 'A/V production, camera equipment, and broadcasting facilities', TRUE)
 ON CONFLICT (code) DO UPDATE 
 SET name = EXCLUDED.name, description = EXCLUDED.description;
 
 -- Link IT-GLOBAL and OPS-MEDIA as child departments of CORP-HQ
 UPDATE departments 
-SET parent_department_id = 'd1111111-1111-4111-8111-111111111111'
-WHERE id IN ('d2222222-2222-4222-8222-222222222222', 'd3333333-3333-4333-8333-333333333333');
+SET parent_department_id = '01111111-1111-4111-8111-111111111111'
+WHERE id IN ('02222222-2222-4222-8222-222222222222', '03333333-3333-4333-8333-333333333333');
 
 -- ============================================================================
 -- 2. SEED ADMIN USER & CORE EMPLOYEES
@@ -30,40 +30,40 @@ WHERE id IN ('d2222222-2222-4222-8222-222222222222', 'd3333333-3333-4333-8333-33
 INSERT INTO users (id, email, password_hash, first_name, last_name, role_id, department_id, is_active)
 VALUES
     (
-        'u1111111-1111-4111-8111-111111111111',
+        'f1111111-1111-4111-8111-111111111111',
         'admin@assetflow.local',
         '$2b$12$e8gJ7.W88Ff46hH7bS93.u/K8f7/6F8L4L76B6J8L2nQ3q1L4X9aO',
         'System',
         'Admin',
         (SELECT id FROM roles WHERE name = 'Admin' LIMIT 1),
-        'd1111111-1111-4111-8111-111111111111',
+        '01111111-1111-4111-8111-111111111111',
         TRUE
     ),
     (
-        'u2222222-2222-4222-8222-222222222222',
+        'f2222222-2222-4222-8222-222222222222',
         'manager@assetflow.local',
         '$2b$12$e8gJ7.W88Ff46hH7bS93.u/K8f7/6F8L4L76B6J8L2nQ3q1L4X9aO',
         'Elena',
         'Vance',
         (SELECT id FROM roles WHERE name = 'Asset Manager' LIMIT 1),
-        'd2222222-2222-4222-8222-222222222222',
+        '02222222-2222-4222-8222-222222222222',
         TRUE
     ),
     (
-        'u3333333-3333-4333-8333-333333333333',
+        'f3333333-3333-4333-8333-333333333333',
         'employee@assetflow.local',
         '$2b$12$e8gJ7.W88Ff46hH7bS93.u/K8f7/6F8L4L76B6J8L2nQ3q1L4X9aO',
         'Marcus',
         'Chen',
         (SELECT id FROM roles WHERE name = 'Employee' LIMIT 1),
-        'd3333333-3333-4333-8333-333333333333',
+        '03333333-3333-4333-8333-333333333333',
         TRUE
     )
 ON CONFLICT (email) DO NOTHING;
 
 -- Assign managers to departments
-UPDATE departments SET manager_id = 'u1111111-1111-4111-8111-111111111111' WHERE code = 'CORP-HQ';
-UPDATE departments SET manager_id = 'u2222222-2222-4222-8222-222222222222' WHERE code = 'IT-GLOBAL';
+UPDATE departments SET manager_id = 'f1111111-1111-4111-8111-111111111111' WHERE code = 'CORP-HQ';
+UPDATE departments SET manager_id = 'f2222222-2222-4222-8222-222222222222' WHERE code = 'IT-GLOBAL';
 
 -- ============================================================================
 -- 3. SEED ASSET CATEGORIES & INITIAL DEMO ASSETS
@@ -82,8 +82,8 @@ VALUES
         'MacBook Pro 16" M3 Max (64GB RAM)',
         'IT Workstations',
         'Allocated',
-        'd2222222-2222-4222-8222-222222222222',
-        'u2222222-2222-4222-8222-222222222222',
+        '02222222-2222-4222-8222-222222222222',
+        'f2222222-2222-4222-8222-222222222222',
         'FVF12345M3MX',
         'Apple',
         'MacBook Pro 16 (A2991)',
@@ -99,7 +99,7 @@ VALUES
         'Sony FX6 Cinema Camera Package + 24-70mm GM Lens',
         'Production Equipment',
         'Available',
-        'd3333333-3333-4333-8333-333333333333',
+        '03333333-3333-4333-8333-333333333333',
         NULL,
         'SNY998877FX6',
         'Sony',
@@ -116,7 +116,7 @@ VALUES
         'APC Symmetra LX 16kVA N+1 Redundant UPS System',
         'Power Infrastructure',
         'Under Maintenance',
-        'd2222222-2222-4222-8222-222222222222',
+        '02222222-2222-4222-8222-222222222222',
         NULL,
         'APC554433SYM',
         'Schneider Electric / APC',
@@ -133,7 +133,7 @@ VALUES
         'Epson Pro L1755UNL 15,000-Lumen Laser Projector',
         'A/V Equipment',
         'Available',
-        'd1111111-1111-4111-8111-111111111111',
+        '01111111-1111-4111-8111-111111111111',
         NULL,
         'EPS112233PRO',
         'Epson',
@@ -154,7 +154,7 @@ SET status = EXCLUDED.status, location = EXCLUDED.location;
 INSERT INTO bookings (resource_id, user_id, start_time, end_time, status, purpose)
 VALUES (
     'a2222222-2222-4222-8222-222222222222',
-    'u3333333-3333-4333-8333-333333333333',
+    'f3333333-3333-4333-8333-333333333333',
     CURRENT_TIMESTAMP + INTERVAL '1 day',
     CURRENT_TIMESTAMP + INTERVAL '1 day 4 hours',
     'confirmed',
@@ -167,8 +167,8 @@ INSERT INTO maintenance_requests (
 )
 VALUES (
     'a3333333-3333-4333-8333-333333333333',
-    'u2222222-2222-4222-8222-222222222222',
-    'u1111111-1111-4111-8111-111111111111',
+    'f2222222-2222-4222-8222-222222222222',
+    'f1111111-1111-4111-8111-111111111111',
     'approved',
     'critical',
     'Annual Battery Module Replacement & Calibration',

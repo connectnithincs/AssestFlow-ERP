@@ -1,3 +1,13 @@
+CREATE SCHEMA IF NOT EXISTS auth;
+
+CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$
+  SELECT NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '')::uuid;
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$
+  SELECT NULLIF(current_setting('request.jwt.claims', true)::json->>'role', '')::text;
+$$ LANGUAGE sql STABLE;
+
 -- ============================================================================
 -- ASSETFLOW ENTERPRISE ASSET & RESOURCE MANAGEMENT SYSTEM
 -- PostgreSQL Database Schema (Module 6: Atomic Procedures, Valuation & RLS)
@@ -20,6 +30,7 @@ WITH asset_age_calc AS (
         a.name,
         a.category,
         a.status,
+        a.condition,
         a.purchase_date,
         COALESCE(a.purchase_cost, 0.0) AS purchase_cost,
         ac.warranty_period_months,
@@ -28,7 +39,7 @@ WITH asset_age_calc AS (
         -- Calculate exact age in years since purchase date
         CASE 
             WHEN a.purchase_date IS NOT NULL THEN 
-                GREATEST(EXTRACT(EPOCH FROM (CURRENT_DATE - a.purchase_date)) / (365.25 * 86400.0), 0.0)
+                GREATEST((CURRENT_DATE - a.purchase_date) / 365.25, 0.0)
             ELSE 0.0
         END AS age_years
     FROM assets a
@@ -74,7 +85,7 @@ SELECT
     
     -- Write-off Recommendation Flag
     CASE 
-        WHEN age_years >= useful_life_years OR status IN ('Damaged', 'Lost') THEN TRUE
+        WHEN age_years >= useful_life_years OR status = 'Lost' OR condition = 'Damaged' THEN TRUE
         ELSE FALSE
     END AS write_off_recommended
 FROM asset_age_calc;
@@ -201,15 +212,17 @@ ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asset_allocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
 
--- Policy 1: Global Read for Active Employees (or filtered by department if strict)
-CREATE POLICY IF NOT EXISTS policy_assets_read_all ON assets
+-- -- Policy 1: Global Read for Active Employees (or filtered by department if strict)
+DROP POLICY IF EXISTS policy_assets_read_all ON assets;
+CREATE POLICY policy_assets_read_all ON assets
     FOR SELECT USING (
         -- Allow if asset is bookable or user belongs to the same department or user is Admin/Manager
         is_bookable = TRUE OR status = 'Available' OR TRUE -- Standard read view for directory
     );
 
 -- Policy 2: Modifications restricted to Asset Managers, Admins, or acting users
-CREATE POLICY IF NOT EXISTS policy_assets_modify_rbac ON assets
+DROP POLICY IF EXISTS policy_assets_modify_rbac ON assets;
+CREATE POLICY policy_assets_modify_rbac ON assets
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users u
@@ -230,38 +243,40 @@ CREATE POLICY IF NOT EXISTS policy_assets_modify_rbac ON assets
 
 CREATE OR REPLACE VIEW v_raised_tickets_queue AS
 SELECT 
-    mr.request_id AS ticket_id,
+    mr.id AS ticket_id,
     'MAINTENANCE' AS ticket_type,
-    mr.priority_level AS priority,
+    mr.priority::VARCHAR AS priority,
     a.asset_tag,
-    a.asset_name,
+    a.name AS asset_name,
     mr.issue_title AS summary,
-    mr.detailed_description AS details,
-    mr.requested_by,
-    mr.status,
+    mr.issue_description AS details,
+    (u.first_name || ' ' || u.last_name)::VARCHAR AS requested_by,
+    mr.status::VARCHAR AS status,
     mr.estimated_cost AS financial_impact,
     mr.created_at AS raised_date
 FROM maintenance_requests mr
-JOIN assets a ON a.asset_id = mr.asset_id
-WHERE mr.status IN ('pending', 'in-progress', 'in_progress', 'approved')
+JOIN assets a ON a.id = mr.asset_id
+JOIN users u ON u.id = mr.requested_by
+WHERE mr.status IN ('pending', 'in_progress', 'approved')
 
 UNION ALL
 
 SELECT 
-    tr.transfer_id AS ticket_id,
+    tr.id AS ticket_id,
     'TRANSFER' AS ticket_type,
-    'medium' AS priority,
+    'medium'::VARCHAR AS priority,
     a.asset_tag,
-    a.asset_name,
-    CONCAT('Asset Reassignment Request to ', u_req.name) AS summary,
+    a.name AS asset_name,
+    CONCAT('Asset Reassignment Request to ', u_target.first_name, ' ', u_target.last_name)::VARCHAR AS summary,
     tr.transfer_reason AS details,
-    u_req.name AS requested_by,
-    tr.status,
+    (u_req.first_name || ' ' || u_req.last_name)::VARCHAR AS requested_by,
+    tr.status::VARCHAR AS status,
     0.00 AS financial_impact,
-    tr.request_date AS raised_date
+    tr.created_at AS raised_date
 FROM transfer_requests tr
-JOIN assets a ON a.asset_id = tr.asset_id
-JOIN users u_req ON u_req.user_id = tr.requested_by_id
+JOIN assets a ON a.id = tr.asset_id
+JOIN users u_req ON u_req.id = tr.requested_by
+LEFT JOIN users u_target ON u_target.id = tr.target_assignee_id
 WHERE tr.status IN ('pending', 'approved');
 
 -- ============================================================================
@@ -269,56 +284,55 @@ WHERE tr.status IN ('pending', 'approved');
 -- ============================================================================
 -- Provides a dedicated user-centric view and atomic submission engine so when
 -- an individual employee logs in (e.g., Priya USR-001 or Marcus USR-002), they
--- track only their own raised tickets, current resolution progress %, and assets.
+-- track only their own raised tickets, current resolution progress % and assets.
 -- ============================================================================
 
 -- View: `v_user_my_tickets_portal`
 -- Maps status strings into quantitative progress percentage (`25%` -> `100%`)
 CREATE OR REPLACE VIEW v_user_my_tickets_portal AS
 SELECT 
-    mr.request_id AS ticket_id,
+    mr.id AS ticket_id,
     'MAINTENANCE REPAIR' AS ticket_type,
-    mr.priority_level AS priority,
+    mr.priority::VARCHAR AS priority,
     a.asset_tag,
-    a.asset_name,
+    a.name AS asset_name,
     mr.issue_title AS summary,
-    mr.detailed_description AS details,
-    mr.requested_by,
-    -- Join or match user ID who raised it
-    COALESCE(u.user_id, 'usr-02') AS user_id,
-    mr.status,
+    mr.issue_description AS details,
+    (u.first_name || ' ' || u.last_name)::VARCHAR AS requested_by,
+    mr.requested_by AS user_id,
+    mr.status::VARCHAR AS status,
     CASE 
         WHEN mr.status = 'pending' THEN 25
-        WHEN mr.status IN ('in-progress', 'in_progress') THEN 50
+        WHEN mr.status = 'in_progress' THEN 50
         WHEN mr.status = 'approved' THEN 75
         WHEN mr.status IN ('completed', 'resolved') THEN 100
         ELSE 10
     END AS progress_percentage,
     CASE 
         WHEN mr.status = 'pending' THEN 'Ticket logged; awaiting technician dispatch.'
-        WHEN mr.status IN ('in-progress', 'in_progress') THEN 'Technician actively diagnosing / repairing asset.'
+        WHEN mr.status = 'in_progress' THEN 'Technician actively diagnosing / repairing asset.'
         WHEN mr.status = 'approved' THEN 'Repair quote approved; replacement parts ordered.'
         WHEN mr.status IN ('completed', 'resolved') THEN 'Repair completed and verified. Asset returned.'
         ELSE 'Status under review.'
     END AS progress_description,
     mr.created_at AS raised_date
 FROM maintenance_requests mr
-JOIN assets a ON a.asset_id = mr.asset_id
-LEFT JOIN users u ON u.name = mr.requested_by
+JOIN assets a ON a.id = mr.asset_id
+JOIN users u ON u.id = mr.requested_by
 
 UNION ALL
 
 SELECT 
-    tr.transfer_id AS ticket_id,
+    tr.id AS ticket_id,
     'ASSET TRANSFER' AS ticket_type,
-    'medium' AS priority,
+    'medium'::VARCHAR AS priority,
     a.asset_tag,
-    a.asset_name,
-    CONCAT('Reassignment Request to ', u_req.name) AS summary,
+    a.name AS asset_name,
+    CONCAT('Reassignment Request to ', u_target.first_name, ' ', u_target.last_name)::VARCHAR AS summary,
     tr.transfer_reason AS details,
-    u_req.name AS requested_by,
-    tr.requested_by_id AS user_id,
-    tr.status,
+    (u_req.first_name || ' ' || u_req.last_name)::VARCHAR AS requested_by,
+    tr.requested_by AS user_id,
+    tr.status::VARCHAR AS status,
     CASE 
         WHEN tr.status = 'pending' THEN 33
         WHEN tr.status = 'approved' THEN 66
@@ -331,36 +345,37 @@ SELECT
         WHEN tr.status = 'completed' THEN 'Handover complete. Custody record updated.'
         ELSE 'Under verification.'
     END AS progress_description,
-    tr.request_date AS raised_date
+    tr.created_at AS raised_date
 FROM transfer_requests tr
-JOIN assets a ON a.asset_id = tr.asset_id
-JOIN users u_req ON u_req.user_id = tr.requested_by_id;
+JOIN assets a ON a.id = tr.asset_id
+JOIN users u_req ON u_req.id = tr.requested_by
+LEFT JOIN users u_target ON u_target.id = tr.target_assignee_id;
 
 -- Procedure: `fn_raise_user_ticket`
 -- Enables a standard employee to log a new maintenance/repair ticket in 1 call.
 CREATE OR REPLACE FUNCTION fn_raise_user_ticket(
-    p_user_id VARCHAR,
+    p_user_id UUID,
     p_asset_tag VARCHAR,
     p_issue_title VARCHAR,
     p_detailed_description TEXT DEFAULT NULL,
     p_priority VARCHAR DEFAULT 'medium'
 )
 RETURNS TABLE (
-    ticket_id VARCHAR,
+    ticket_id UUID,
     asset_tag VARCHAR,
     asset_name VARCHAR,
-    status VARCHAR,
+    status workflow_status,
     progress_percentage INTEGER,
     message TEXT
 ) AS $$
 DECLARE
-    v_asset_id VARCHAR;
+    v_asset_id UUID;
     v_asset_name VARCHAR;
+    v_new_ticket_id UUID;
     v_user_name VARCHAR;
-    v_new_ticket_id VARCHAR;
 BEGIN
     -- 1. Lookup Asset
-    SELECT asset_id, asset_name INTO v_asset_id, v_asset_name
+    SELECT id, name INTO v_asset_id, v_asset_name
     FROM assets
     WHERE assets.asset_tag = p_asset_tag
     LIMIT 1;
@@ -370,42 +385,42 @@ BEGIN
     END IF;
 
     -- 2. Lookup User
-    SELECT name INTO v_user_name
+    SELECT (first_name || ' ' || last_name) INTO v_user_name
     FROM users
-    WHERE user_id = p_user_id
+    WHERE id = p_user_id
     LIMIT 1;
 
     IF v_user_name IS NULL THEN
-        v_user_name := CONCAT('Employee (', p_user_id, ')');
+        RAISE EXCEPTION 'Ticket Submission Error: User ID "%" not found.', p_user_id;
     END IF;
 
     -- 3. Insert Maintenance Ticket
-    v_new_ticket_id := CONCAT('MNT-USR-', CAST(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) AS BIGINT));
-    
     INSERT INTO maintenance_requests (
-        request_id, asset_id, requested_by, priority_level, 
-        issue_title, detailed_description, status, created_at
+        asset_id, requested_by, priority, 
+        issue_title, issue_description, status
     )
     VALUES (
-        v_new_ticket_id, v_asset_id, v_user_name, p_priority, 
-        p_issue_title, COALESCE(p_detailed_description, p_issue_title), 'pending', CURRENT_DATE
-    );
+        v_asset_id, p_user_id, p_priority::priority_level, 
+        p_issue_title, COALESCE(p_detailed_description, p_issue_title), 'pending'::workflow_status
+    )
+    RETURNING id INTO v_new_ticket_id;
 
     -- 4. Log Audit Activity
-    INSERT INTO activity_logs (user_name, module_name, action_description)
-    VALUES (v_user_name, 'TICKETS', CONCAT('Raised repair ticket ', v_new_ticket_id, ' for ', p_asset_tag, ': ', p_issue_title));
+    INSERT INTO activity_logs (user_id, action, module, description)
+    VALUES (p_user_id, 'RAISE_MAINTENANCE_TICKET', 'MAINTENANCE', CONCAT('Raised repair ticket ', v_new_ticket_id, ' for ', p_asset_tag, ': ', p_issue_title));
 
     RETURN QUERY SELECT 
-        v_new_ticket_id, p_asset_tag, v_asset_name, 'pending'::VARCHAR, 25,
+        v_new_ticket_id, p_asset_tag, v_asset_name, 'pending'::workflow_status, 25,
         CONCAT('Repair ticket successfully logged! Track progress anytime in your user portal.')::TEXT;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Policy 3: Employee Self-Service RLS Isolation
-CREATE POLICY IF NOT EXISTS policy_user_self_service_tickets ON maintenance_requests
+DROP POLICY IF EXISTS policy_user_self_service_tickets ON maintenance_requests;
+CREATE POLICY policy_user_self_service_tickets ON maintenance_requests
     FOR ALL USING (
         -- Users can only see tickets they requested, unless they are Admin/Manager
-        requested_by = (SELECT name FROM users WHERE user_id = auth.uid())
+        requested_by = auth.uid()
         OR EXISTS (
             SELECT 1 FROM users u
             JOIN roles r ON r.id = u.role_id

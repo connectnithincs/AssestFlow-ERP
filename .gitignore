@@ -10,3 +10,9 @@ venv/
 *.log
 *.db
 *.sqlite
+
+# Local Database & PostgREST files
+pgdata/
+pg_logfile
+postgrest.conf
+artifacts/

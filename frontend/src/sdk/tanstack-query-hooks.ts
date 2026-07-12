@@ -18,10 +18,13 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client pointing directly to PostgreSQL engine
 // In development, points to local Supabase / PostgREST instance or Docker container
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:3000';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'this-is-a-super-secret-jwt-key-for-assetflow-erp-prototype!';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:3000';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIn0.sCnW8W5M9ZoBkgwR6qHtleua7c4v-ldAQQ5iOeq9qEQ';
 
 export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if ((supabase as any).rest) {
+  (supabase as any).rest.url = SUPABASE_URL;
+}
 
 // ============================================================================
 // TYPE DEFINITIONS (Mapped directly to PostgreSQL `sql/` schema)

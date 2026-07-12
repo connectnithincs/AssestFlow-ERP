@@ -18,6 +18,7 @@
 
 CREATE MATERIALIZED VIEW mv_asset_status_summary AS
 SELECT 
+    1 AS id,
     COUNT(*) AS total_assets,
     COUNT(*) FILTER (WHERE status = 'Available') AS count_available,
     COUNT(*) FILTER (WHERE status = 'Allocated') AS count_allocated,
@@ -36,11 +37,11 @@ SELECT
     COUNT(*) FILTER (
         WHERE status = 'Under Maintenance' 
           AND updated_at < CURRENT_TIMESTAMP - INTERVAL '14 days'
-    ) AS count_overdue_maintenance
+     ) AS count_overdue_maintenance
 FROM assets;
 
 -- Unique index required to enable zero-downtime `REFRESH MATERIALIZED VIEW CONCURRENTLY`
-CREATE UNIQUE INDEX idx_mv_asset_status_summary_single_row ON mv_asset_status_summary ((TRUE));
+CREATE UNIQUE INDEX idx_mv_asset_status_summary_single_row ON mv_asset_status_summary (id);
 
 -- ============================================================================
 -- 2. DAILY TIME-IN-STATE MATERIALIZED VIEW (For Most-Used vs. Idle Analytics)
