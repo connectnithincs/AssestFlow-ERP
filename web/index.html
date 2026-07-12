@@ -172,6 +172,261 @@
 
   .status-badge-live{background:#DDEFEC; color:#0F4A46; border:1px solid #1B6E68; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600;}
 
+  /* ---------- Modern Premium Enterprise Analytics Chart (Glassmorphism) ---------- */
+  .chart-glass-card {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(222, 227, 232, 0.85);
+    border-radius: 24px;
+    padding: 22px 24px;
+    box-shadow: 0 20px 45px -15px rgba(24, 43, 73, 0.12), 0 6px 16px -6px rgba(24, 43, 73, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.25, 0.4, 0.25, 1), box-shadow 0.35s ease;
+  }
+  .chart-glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 28px 55px -15px rgba(24, 43, 73, 0.18), 0 10px 22px -8px rgba(24, 43, 73, 0.10);
+  }
+  .chart-glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.4) 50%, transparent 65%);
+    transform: translateX(-120%);
+    animation: chartShimmer 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes chartShimmer {
+    0%, 60% { transform: translateX(-120%); }
+    80%, 100% { transform: translateX(120%); }
+  }
+  .chart-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 5;
+  }
+  .chart-title-group .chart-main-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 3px 0;
+    letter-spacing: -0.01em;
+  }
+  .chart-title-group .chart-sub-title {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chart-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .chart-legend-dot.active {
+    background: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  }
+  .chart-legend-dot.idle {
+    background: #93c5fd;
+    opacity: 0.7;
+  }
+  .chart-body-wrapper {
+    position: relative;
+    height: 185px;
+    margin-top: 10px;
+    display: flex;
+  }
+  .chart-grid-lines {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .chart-grid-line {
+    border-bottom: 1px dashed rgba(222, 227, 232, 0.7);
+    width: 100%;
+    height: 0;
+  }
+  .chart-svg-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    overflow: visible;
+  }
+  .chart-area-path {
+    fill: url(#areaGradient);
+    opacity: 0.9;
+    animation: areaFadeIn 1.5s cubic-bezier(0.25, 0.4, 0.25, 1) forwards;
+  }
+  @keyframes areaFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 0.9; transform: translateY(0); }
+  }
+  .chart-line-path {
+    fill: none;
+    stroke: #3b82f6;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    animation: drawChartLine 1.6s cubic-bezier(0.25, 0.4, 0.25, 1) forwards;
+  }
+  @keyframes drawChartLine {
+    to { stroke-dashoffset: 0; }
+  }
+  .chart-point {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border: 3px solid #3b82f6;
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
+    cursor: pointer;
+    z-index: 10;
+    transform: translate(-50%, -50%) scale(1);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .chart-point:hover {
+    transform: translate(-50%, -50%) scale(1.45);
+    background: #3b82f6;
+    box-shadow: 0 0 18px rgba(59, 130, 246, 1);
+  }
+  .chart-tooltip {
+    position: absolute;
+    background: rgba(24, 43, 73, 0.94);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    padding: 7px 11px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -140%) scale(0.9);
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.25, 0.4, 0.25, 1);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+    z-index: 20;
+  }
+  .chart-point:hover + .chart-tooltip,
+  .chart-point:focus + .chart-tooltip {
+    opacity: 1;
+    transform: translate(-50%, -125%) scale(1);
+  }
+  .chart-x-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 195px;
+    padding: 0 15px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 5;
+  }
+  /* Floating 98% Uptime Glass Card */
+  .chart-floating-uptime {
+    position: absolute;
+    top: 65px;
+    left: 18px;
+    z-index: 15;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    padding: 10px 14px;
+    width: 148px;
+    box-shadow: 0 14px 30px -8px rgba(24, 43, 73, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    animation: floatUptimeCard 6s ease-in-out infinite;
+  }
+  @keyframes floatUptimeCard {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .chart-uptime-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .chart-uptime-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .chart-uptime-live {
+    font-size: 9px;
+    font-weight: 800;
+    color: #0B8F43;
+    background: #E4F2E8;
+    padding: 1px 6px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .chart-uptime-live::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #0B8F43;
+    animation: pulseDot 2s infinite;
+  }
+  @keyframes pulseDot {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.4); opacity: 0.4; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+  }
+  .chart-uptime-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .chart-uptime-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 18px;
+    margin-top: 6px;
+  }
+  .chart-uptime-bar {
+    flex: 1;
+    background: linear-gradient(to top, #3b82f6, #93c5fd);
+    border-radius: 2px 2px 0 0;
+  }
+
   /* ---------- Interactive Modals ---------- */
   .modal-overlay{position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,30,28,0.65); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; z-index:100;}
   .modal-overlay.active{display:flex;}
@@ -609,15 +864,87 @@
       <div class="view" id="view-reports">
         <div class="view-header"><h1>Reports & analytics</h1><p>Operational insight for managers and financial depreciation engine (`v_asset_financial_valuation`).</p></div>
         <div class="grid grid-2">
-          <div class="card">
-            <div class="section-title">Asset utilization by category</div>
-            <div class="bar-chart">
-              <div class="bar" style="height:88%;"><span>88%</span></div>
-              <div class="bar" style="height:62%;"><span>62%</span></div>
-              <div class="bar" style="height:41%;"><span>41%</span></div>
-              <div class="bar" style="height:74%;"><span>74%</span></div>
+          <div class="chart-glass-card">
+            <div class="chart-header-row">
+              <div class="chart-title-group">
+                <div class="chart-main-title">Asset Utilization</div>
+                <div class="chart-sub-title">Real-time lifecycle & category telemetry</div>
+              </div>
+              <div class="chart-legend">
+                <div class="chart-legend-item"><span class="chart-legend-dot active"></span> Active</div>
+                <div class="chart-legend-item"><span class="chart-legend-dot idle"></span> Idle</div>
+              </div>
             </div>
-            <div style="display:flex;"><div class="bar-label" style="flex:1;">Electronics</div><div class="bar-label" style="flex:1;">Furniture</div><div class="bar-label" style="flex:1;">Vehicles</div><div class="bar-label" style="flex:1;">Rooms</div></div>
+
+            <div class="chart-body-wrapper">
+              <!-- Floating 98% Uptime Glass Card on the left -->
+              <div class="chart-floating-uptime">
+                <div class="chart-uptime-top">
+                  <span class="chart-uptime-label">System Uptime</span>
+                  <span class="chart-uptime-live">LIVE</span>
+                </div>
+                <div class="chart-uptime-value">98.4%</div>
+                <div class="chart-uptime-bars">
+                  <div class="chart-uptime-bar" style="height:45%;"></div>
+                  <div class="chart-uptime-bar" style="height:65%;"></div>
+                  <div class="chart-uptime-bar" style="height:80%;"></div>
+                  <div class="chart-uptime-bar" style="height:55%;"></div>
+                  <div class="chart-uptime-bar" style="height:90%;"></div>
+                  <div class="chart-uptime-bar" style="height:75%;"></div>
+                  <div class="chart-uptime-bar" style="height:100%;"></div>
+                </div>
+              </div>
+
+              <!-- Clean Grid Lines -->
+              <div class="chart-grid-lines">
+                <div class="chart-grid-line"></div>
+                <div class="chart-grid-line"></div>
+                <div class="chart-grid-line"></div>
+                <div class="chart-grid-line"></div>
+              </div>
+
+              <!-- SVG Curved Area Chart with Gradient -->
+              <svg class="chart-svg-container" viewBox="0 0 500 180" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45" />
+                    <stop offset="65%" stop-color="#93c5fd" stop-opacity="0.12" />
+                    <stop offset="100%" stop-color="#e0f2fe" stop-opacity="0.0" />
+                  </linearGradient>
+                </defs>
+                <!-- Area path (closed at bottom) -->
+                <path class="chart-area-path" d="M 40,130 C 110,130 150,22 230,35 C 310,48 360,110 460,45 L 460,180 L 40,180 Z"></path>
+                <!-- Smooth curved stroke line -->
+                <path class="chart-line-path" d="M 40,130 C 110,130 150,22 230,35 C 310,48 360,110 460,45"></path>
+              </svg>
+
+              <!-- Glowing Interactive Data Points + Tooltips -->
+              <div style="position:absolute; inset:0; pointer-events:none;">
+                <div style="position:absolute; left:8%; top:72%; pointer-events:auto;">
+                  <div class="chart-point" tabindex="0"></div>
+                  <div class="chart-tooltip">Rooms: 41% Active</div>
+                </div>
+                <div style="position:absolute; left:46%; top:19.4%; pointer-events:auto;">
+                  <div class="chart-point" tabindex="0"></div>
+                  <div class="chart-tooltip">Electronics: 88% Active (+$4.2k)</div>
+                </div>
+                <div style="position:absolute; left:71%; top:61%; pointer-events:auto;">
+                  <div class="chart-point" tabindex="0"></div>
+                  <div class="chart-tooltip">Furniture: 62% Active</div>
+                </div>
+                <div style="position:absolute; left:92%; top:25%; pointer-events:auto;">
+                  <div class="chart-point" tabindex="0"></div>
+                  <div class="chart-tooltip">Vehicles: 74% Active</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-x-labels">
+              <span>Rooms</span>
+              <span>Electronics</span>
+              <span>Furniture</span>
+              <span>Vehicles</span>
+            </div>
           </div>
           <div class="card">
             <div class="section-title">Financial Depreciation Sample (`Straight-Line`)</div>
