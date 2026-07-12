@@ -8,6 +8,7 @@ import {
 export const DashboardView: React.FC = () => {
   const { 
     currentUser,
+    activeRole,
     assets, 
     bookings, 
     maintenanceRequests, 
@@ -18,6 +19,8 @@ export const DashboardView: React.FC = () => {
     registerAsset,
     createBooking,
     raiseMaintenanceRequest,
+    returnAsset,
+    cancelBooking,
     categories,
     users
   } = useAppState();
@@ -135,6 +138,209 @@ export const DashboardView: React.FC = () => {
       </div>
     </div>
   );
+
+  // Derived Employee data
+  const myAssignedAssets = assets.filter(a => a.currentHolderId === currentUser?.id);
+  const myActiveBookings = bookings.filter(b => b.userId === currentUser?.id && b.status !== 'Cancelled');
+  const myOpenTickets = maintenanceRequests.filter(m => {
+    const holdsAsset = assets.some(a => a.tag === m.assetTag && a.currentHolderId === currentUser?.id);
+    return holdsAsset && m.status !== 'Resolved';
+  });
+
+  if (activeRole === 'Employee') {
+    return (
+      <div className="space-y-6">
+        {/* Employee KPI Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCard('My Assigned Assets', myAssignedAssets.length, <Package className="w-5 h-5 text-[#167C65]" />, 'Assets currently held')}
+          {kpiCard('My Active Bookings', myActiveBookings.length, <CalendarDays className="w-5 h-5 text-indigo-500" />, 'Shared resource slots')}
+          {kpiCard('My Open Tickets', myOpenTickets.length, <Wrench className="w-5 h-5 text-amber-500" />, 'Active maintenance jobs')}
+          {kpiCard('Available Assets', kpis.available, <UserCheck className="w-5 h-5 text-blue-600" />, 'Ready for allocation')}
+        </div>
+
+        {/* Quick Actions Panel */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
+          <h4 className="text-sm font-bold text-gray-900 mb-4">Quick Operations Actions</h4>
+          <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={() => setShowBookingModal(true)}
+              className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+            >
+              <Calendar className="w-4 h-4" />
+              Book Shared Resource
+            </button>
+            <button 
+              onClick={() => setShowMaintenanceModal(true)}
+              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              <Wrench className="w-4 h-4" />
+              Raise Maintenance ticket
+            </button>
+          </div>
+        </div>
+
+        {/* Employee Content Split */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Column 1: My Assigned Assets */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs flex flex-col justify-between min-h-[350px]">
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-sm font-bold text-gray-900">My Assigned Assets</h4>
+                <span className="text-[10px] font-bold bg-emerald-50 text-[#167C65] px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
+              </div>
+              
+              <div className="space-y-3 overflow-y-auto max-h-64 pr-1">
+                {myAssignedAssets.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-12">No assets currently allocated to you.</p>
+                ) : (
+                  myAssignedAssets.map(asset => (
+                    <div key={asset.tag} className="p-3 bg-gray-50 border border-gray-150 rounded-xl space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[9px] font-bold text-gray-400 block">{asset.tag}</span>
+                          <h5 className="text-xs font-bold text-gray-900 leading-tight">{asset.name}</h5>
+                          <span className="text-[10px] text-gray-500 block mt-0.5">{asset.location}</span>
+                        </div>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
+                          asset.status === 'Under Maintenance' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
+                        }`}>
+                          {asset.status}
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-2 pt-1 border-t border-gray-200/50">
+                        <button
+                          onClick={() => returnAsset(asset.tag)}
+                          className="flex-1 text-[10px] font-bold py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors"
+                        >
+                          Request Return
+                        </button>
+                        <button
+                          onClick={() => {
+                            const partner = prompt("Enter Colleague email to transfer to:");
+                            if (!partner) return;
+                            const target = users.find(u => u.email.toLowerCase() === partner.toLowerCase());
+                            if (target) {
+                              addToast('Transfer Requested', `Request to transfer ${asset.name} to ${target.name} forwarded to HOD.`, 'success');
+                            } else {
+                              alert("Colleague email not found in directory.");
+                            }
+                          }}
+                          className="flex-1 text-[10px] font-bold py-1.5 rounded-lg border border-[#167C65]/20 bg-[#167C65]/5 hover:bg-[#167C65]/10 text-[#167C65] transition-colors"
+                        >
+                          Request Transfer
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setCurrentPage('AssetRegistry')}
+              className="text-xs text-[#167C65] font-bold hover:underline flex items-center gap-1 mt-4 pt-3 border-t border-gray-100"
+            >
+              Browse All Registry Assets <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Column 2: My Resource Bookings */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs flex flex-col justify-between min-h-[350px]">
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-sm font-bold text-gray-900">My Resource Bookings</h4>
+                <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">Bookings</span>
+              </div>
+              
+              <div className="space-y-3 overflow-y-auto max-h-64 pr-1">
+                {myActiveBookings.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-12">No active bookings scheduled.</p>
+                ) : (
+                  myActiveBookings.map(b => (
+                    <div key={b.id} className="p-3 bg-gray-50 border border-gray-150 rounded-xl flex justify-between items-start text-xs gap-3">
+                      <div>
+                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider block w-fit mb-1 ${
+                          b.status === 'Upcoming' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                          {b.status}
+                        </span>
+                        <h5 className="font-bold text-gray-900 leading-tight mb-0.5">{b.title}</h5>
+                        <p className="text-gray-500 text-[10px] leading-none mb-1">{b.resourceName}</p>
+                        <p className="text-[9px] text-[#167C65] font-semibold mt-1">
+                          {new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(b.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      
+                      {b.status === 'Upcoming' && (
+                        <button
+                          onClick={() => cancelBooking(b.id)}
+                          className="text-[9px] font-bold text-red-600 hover:underline shrink-0 pt-0.5"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage('ResourceBooking')}
+              className="text-xs text-[#167C65] font-bold hover:underline flex items-center gap-1 mt-4 pt-3 border-t border-gray-100"
+            >
+              Open Booking Calendar <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Column 3: My Maintenance Tickets */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs flex flex-col justify-between min-h-[350px]">
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-sm font-bold text-gray-900">My Maintenance Tickets</h4>
+                <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full uppercase tracking-wider">Tickets</span>
+              </div>
+              
+              <div className="space-y-3 overflow-y-auto max-h-64 pr-1">
+                {myOpenTickets.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-12">No open maintenance tickets.</p>
+                ) : (
+                  myOpenTickets.map(req => (
+                    <div key={req.id} className="p-3 bg-gray-50 border border-gray-150 rounded-xl space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[9px] font-bold text-gray-400 block">{req.assetTag}</span>
+                          <h5 className="text-xs font-bold text-gray-900 leading-tight w-36 truncate">{req.assetName}</h5>
+                        </div>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase bg-amber-50 text-amber-600">
+                          {req.status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-600 leading-normal line-clamp-2">{req.issueDescription}</p>
+                      <div className="flex justify-between items-center text-[9px] text-gray-400 pt-1 border-t border-gray-200/50">
+                        <span>Technician: {req.assignedTechnician || 'Pending'}</span>
+                        <span>Raised: {req.dateRaised}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage('Maintenance')}
+              className="text-xs text-[#167C65] font-bold hover:underline flex items-center gap-1 mt-4 pt-3 border-t border-gray-100"
+            >
+              Open Maintenance Board <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

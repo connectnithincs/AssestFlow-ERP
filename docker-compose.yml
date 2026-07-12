@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # AssetFlow PostgreSQL Database Engine (Relational-Integrity-First Engine)
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: assetflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-assetflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SecretSecurePass2026!}
+      POSTGRES_DB: ${DB_NAME:-assetflow_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Persistent named volume for data retention across restarts
+      - assetflow-db-data:/var/lib/postgresql/data
+      
+      # Automatically execute DDL schemas and seed scripts on container initialization
+      # Files in /docker-entrypoint-initdb.d are executed alphabetically:
+      # 001_initial_schema.sql -> 002_audit_module_schema.sql -> 003_analytics_reporting_schema.sql -> 004_spec_complete_schema.sql -> setup.sql
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-assetflow} -d ${DB_NAME:-assetflow_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - assetflow-net
+
+  # ===========================================================================
+  # PostgREST API Layer (Zero-API Middleman)
+  # ===========================================================================
+  postgrest:
+    image: postgrest/postgrest:latest
+    container_name: assetflow-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PGRST_DB_URI: "postgres://${DB_USER:-assetflow}:${DB_PASSWORD:-SecretSecurePass2026!}@postgres:5432/${DB_NAME:-assetflow_db}"
+      PGRST_DB_SCHEMAS: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: "this-is-a-super-secret-jwt-key-for-assetflow-erp-prototype!"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - assetflow-net
+
+volumes:
+  assetflow-db-data:
+    driver: local
+
+networks:
+  assetflow-net:
+    driver: bridge

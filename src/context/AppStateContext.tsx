@@ -259,7 +259,7 @@ const initialActivities: Activity[] = [
 ];
 
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(initialUsers[0]); // Starts logged in as Priya (Asset Manager)
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // Starts unauthenticated to land on login page by default
   const [activeRole, setActiveRoleState] = useState<UserRole>('Asset Manager');
   const [currentPage, setCurrentPage] = useState<string>('Dashboard');
   

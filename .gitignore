@@ -1,12 +1,26 @@
+# Python/Backend environment
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+env/
+venv/
+.idea/
+.vscode/
+*.log
+*.db
+*.sqlite
+
 # Logs
 logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules / Build files
 node_modules
 dist
 dist-ssr
@@ -22,3 +36,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local Database & PostgREST files
+pgdata/
+pg_logfile
+postgrest.conf
+artifacts/

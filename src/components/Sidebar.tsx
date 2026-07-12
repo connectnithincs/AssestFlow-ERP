@@ -27,8 +27,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
   // Check role-based menu authorization
   const isAuthorized = (menu: string): boolean => {
+    if (activeRole === 'Admin') {
+      // Admin is restricted to: Dashboard, Asset Registry, Allocation (only, not transfer), Maintenance, Asset Audit, Reports, Activity
+      const allowedAdminMenus = [
+        'Dashboard',
+        'AssetRegistry',
+        'AllocationTransfer',
+        'Maintenance',
+        'AssetAudit',
+        'Reports',
+        'ActivityNotifications'
+      ];
+      return allowedAdminMenus.includes(menu);
+    }
     if (menu === 'OrgSetup') {
-      return activeRole === 'Admin';
+      return false; // Since Admin is restricted, OrgSetup is disabled
+    }
+    if (menu === 'AllocationTransfer') {
+      return activeRole !== 'Employee'; // Employees do not see the admin allocation approval queue
     }
     if (menu === 'AssetAudit') {
       return activeRole !== 'Employee'; // Admin, Asset Manager, Department Head can audit
@@ -43,6 +59,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     if (!isAuthorized(name)) return null;
 
     const isActive = currentPage === name;
+    // Customize label for Admin: Allocation only not transfer
+    const displayLabel = (name === 'AllocationTransfer' && activeRole === 'Admin') ? 'Allocation' : label;
+
     return (
       <button
         onClick={() => handleNavClick(name)}
@@ -53,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         }`}
       >
         {icon}
-        <span>{label}</span>
+        <span>{displayLabel}</span>
       </button>
     );
   };

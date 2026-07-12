@@ -9,15 +9,22 @@ export const MaintenanceView: React.FC = () => {
     assets, 
     raiseMaintenanceRequest, 
     updateMaintenanceStatus, 
-    activeRole 
+    activeRole,
+    currentUser
   } = useAppState();
+
+  // Filter requests so that employees can only view their own tickets
+  const filteredRequests = maintenanceRequests.filter(req => {
+    if (activeRole !== 'Employee') return true;
+    return assets.some(a => a.tag === req.assetTag && a.currentHolderId === currentUser?.id);
+  });
 
   const [showRaiseModal, setShowRaiseModal] = useState(false);
   const [newRequest, setNewRequest] = useState({ assetTag: '', issueDescription: '', priority: 'Medium' as any });
 
   // Selected Request to show stepper detail
   const [activeRequestId, setActiveRequestId] = useState<string | null>(
-    maintenanceRequests.length > 0 ? maintenanceRequests[0].id : null
+    filteredRequests.length > 0 ? filteredRequests[0].id : null
   );
 
   // Form submit handler
@@ -32,12 +39,12 @@ export const MaintenanceView: React.FC = () => {
     setShowRaiseModal(false);
 
     // Auto select the newly created request
-    if (maintenanceRequests.length > 0) {
-      setActiveRequestId(maintenanceRequests[0].id);
+    if (filteredRequests.length > 0) {
+      setActiveRequestId(filteredRequests[0].id);
     }
   };
 
-  const selectedRequest = maintenanceRequests.find(r => r.id === activeRequestId);
+  const selectedRequest = filteredRequests.find(r => r.id === activeRequestId);
 
   const getPriorityColor = (priority: MaintenanceRecord['priority']) => {
     const styles = {
@@ -174,13 +181,13 @@ export const MaintenanceView: React.FC = () => {
         
         {/* Left Column: Tickets list */}
         <div className="lg:col-span-1 bg-white rounded-2xl border border-gray-200 p-4 shadow-xs space-y-3">
-          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 pb-2 mb-2">Active Tickets ({maintenanceRequests.length})</h4>
+          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 pb-2 mb-2">Active Tickets ({filteredRequests.length})</h4>
           
           <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
-            {maintenanceRequests.length === 0 ? (
+            {filteredRequests.length === 0 ? (
               <p className="text-xs text-gray-400 italic text-center py-8">No maintenance requests raised.</p>
             ) : (
-              maintenanceRequests.map(req => {
+              filteredRequests.map(req => {
                 const isActive = activeRequestId === req.id;
                 return (
                   <div
