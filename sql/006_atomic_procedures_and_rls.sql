@@ -243,7 +243,7 @@ SELECT
     mr.created_at AS raised_date
 FROM maintenance_requests mr
 JOIN assets a ON a.asset_id = mr.asset_id
-WHERE mr.status IN ('pending', 'in-progress', 'approved')
+WHERE mr.status IN ('pending', 'in-progress', 'in_progress', 'approved')
 
 UNION ALL
 
@@ -263,4 +263,155 @@ FROM transfer_requests tr
 JOIN assets a ON a.asset_id = tr.asset_id
 JOIN users u_req ON u_req.user_id = tr.requested_by_id
 WHERE tr.status IN ('pending', 'approved');
+
+-- ============================================================================
+-- 5. EMPLOYEE SELF-SERVICE PORTAL & MY TICKET PROGRESS TRACKING ENGINE
+-- ============================================================================
+-- Provides a dedicated user-centric view and atomic submission engine so when
+-- an individual employee logs in (e.g., Priya USR-001 or Marcus USR-002), they
+-- track only their own raised tickets, current resolution progress %, and assets.
+-- ============================================================================
+
+-- View: `v_user_my_tickets_portal`
+-- Maps status strings into quantitative progress percentage (`25%` -> `100%`)
+CREATE OR REPLACE VIEW v_user_my_tickets_portal AS
+SELECT 
+    mr.request_id AS ticket_id,
+    'MAINTENANCE REPAIR' AS ticket_type,
+    mr.priority_level AS priority,
+    a.asset_tag,
+    a.asset_name,
+    mr.issue_title AS summary,
+    mr.detailed_description AS details,
+    mr.requested_by,
+    -- Join or match user ID who raised it
+    COALESCE(u.user_id, 'usr-02') AS user_id,
+    mr.status,
+    CASE 
+        WHEN mr.status = 'pending' THEN 25
+        WHEN mr.status IN ('in-progress', 'in_progress') THEN 50
+        WHEN mr.status = 'approved' THEN 75
+        WHEN mr.status IN ('completed', 'resolved') THEN 100
+        ELSE 10
+    END AS progress_percentage,
+    CASE 
+        WHEN mr.status = 'pending' THEN 'Ticket logged; awaiting technician dispatch.'
+        WHEN mr.status IN ('in-progress', 'in_progress') THEN 'Technician actively diagnosing / repairing asset.'
+        WHEN mr.status = 'approved' THEN 'Repair quote approved; replacement parts ordered.'
+        WHEN mr.status IN ('completed', 'resolved') THEN 'Repair completed and verified. Asset returned.'
+        ELSE 'Status under review.'
+    END AS progress_description,
+    mr.created_at AS raised_date
+FROM maintenance_requests mr
+JOIN assets a ON a.asset_id = mr.asset_id
+LEFT JOIN users u ON u.name = mr.requested_by
+
+UNION ALL
+
+SELECT 
+    tr.transfer_id AS ticket_id,
+    'ASSET TRANSFER' AS ticket_type,
+    'medium' AS priority,
+    a.asset_tag,
+    a.asset_name,
+    CONCAT('Reassignment Request to ', u_req.name) AS summary,
+    tr.transfer_reason AS details,
+    u_req.name AS requested_by,
+    tr.requested_by_id AS user_id,
+    tr.status,
+    CASE 
+        WHEN tr.status = 'pending' THEN 33
+        WHEN tr.status = 'approved' THEN 66
+        WHEN tr.status = 'completed' THEN 100
+        ELSE 15
+    END AS progress_percentage,
+    CASE 
+        WHEN tr.status = 'pending' THEN 'Transfer request submitted; awaiting manager sign-off.'
+        WHEN tr.status = 'approved' THEN 'Transfer approved; physical handover scheduled.'
+        WHEN tr.status = 'completed' THEN 'Handover complete. Custody record updated.'
+        ELSE 'Under verification.'
+    END AS progress_description,
+    tr.request_date AS raised_date
+FROM transfer_requests tr
+JOIN assets a ON a.asset_id = tr.asset_id
+JOIN users u_req ON u_req.user_id = tr.requested_by_id;
+
+-- Procedure: `fn_raise_user_ticket`
+-- Enables a standard employee to log a new maintenance/repair ticket in 1 call.
+CREATE OR REPLACE FUNCTION fn_raise_user_ticket(
+    p_user_id VARCHAR,
+    p_asset_tag VARCHAR,
+    p_issue_title VARCHAR,
+    p_detailed_description TEXT DEFAULT NULL,
+    p_priority VARCHAR DEFAULT 'medium'
+)
+RETURNS TABLE (
+    ticket_id VARCHAR,
+    asset_tag VARCHAR,
+    asset_name VARCHAR,
+    status VARCHAR,
+    progress_percentage INTEGER,
+    message TEXT
+) AS $$
+DECLARE
+    v_asset_id VARCHAR;
+    v_asset_name VARCHAR;
+    v_user_name VARCHAR;
+    v_new_ticket_id VARCHAR;
+BEGIN
+    -- 1. Lookup Asset
+    SELECT asset_id, asset_name INTO v_asset_id, v_asset_name
+    FROM assets
+    WHERE assets.asset_tag = p_asset_tag
+    LIMIT 1;
+
+    IF v_asset_id IS NULL THEN
+        RAISE EXCEPTION 'Ticket Submission Error: Asset tag "%" not found.', p_asset_tag;
+    END IF;
+
+    -- 2. Lookup User
+    SELECT name INTO v_user_name
+    FROM users
+    WHERE user_id = p_user_id
+    LIMIT 1;
+
+    IF v_user_name IS NULL THEN
+        v_user_name := CONCAT('Employee (', p_user_id, ')');
+    END IF;
+
+    -- 3. Insert Maintenance Ticket
+    v_new_ticket_id := CONCAT('MNT-USR-', CAST(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) AS BIGINT));
+    
+    INSERT INTO maintenance_requests (
+        request_id, asset_id, requested_by, priority_level, 
+        issue_title, detailed_description, status, created_at
+    )
+    VALUES (
+        v_new_ticket_id, v_asset_id, v_user_name, p_priority, 
+        p_issue_title, COALESCE(p_detailed_description, p_issue_title), 'pending', CURRENT_DATE
+    );
+
+    -- 4. Log Audit Activity
+    INSERT INTO activity_logs (user_name, module_name, action_description)
+    VALUES (v_user_name, 'TICKETS', CONCAT('Raised repair ticket ', v_new_ticket_id, ' for ', p_asset_tag, ': ', p_issue_title));
+
+    RETURN QUERY SELECT 
+        v_new_ticket_id, p_asset_tag, v_asset_name, 'pending'::VARCHAR, 25,
+        CONCAT('Repair ticket successfully logged! Track progress anytime in your user portal.')::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Policy 3: Employee Self-Service RLS Isolation
+CREATE POLICY IF NOT EXISTS policy_user_self_service_tickets ON maintenance_requests
+    FOR ALL USING (
+        -- Users can only see tickets they requested, unless they are Admin/Manager
+        requested_by = (SELECT name FROM users WHERE user_id = auth.uid())
+        OR EXISTS (
+            SELECT 1 FROM users u
+            JOIN roles r ON r.id = u.role_id
+            WHERE u.id = auth.uid() AND r.name IN ('Admin', 'Asset Manager')
+        )
+        OR auth.role() = 'service_role'
+    );
+
 

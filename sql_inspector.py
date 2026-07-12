@@ -192,6 +192,7 @@ def setup_local_database():
         print(f"[WARN] Seed file '{seed_file}' not found.")
 
     # 13. Create Unified Raised Tickets Queue View (`v_raised_tickets_queue`)
+    cursor.execute("DROP VIEW IF EXISTS v_raised_tickets_queue;")
     cursor.execute("""
     CREATE VIEW IF NOT EXISTS v_raised_tickets_queue AS
     SELECT 
@@ -208,7 +209,7 @@ def setup_local_database():
         mr.created_at AS raised_date
     FROM maintenance_requests mr
     JOIN assets a ON a.asset_id = mr.asset_id
-    WHERE mr.status IN ('pending', 'in-progress', 'approved')
+    WHERE mr.status IN ('pending', 'in-progress', 'in_progress', 'approved')
 
     UNION ALL
 
@@ -228,6 +229,71 @@ def setup_local_database():
     JOIN assets a ON a.asset_id = tr.asset_id
     JOIN users u_req ON u_req.user_id = tr.requested_by_id
     WHERE tr.status IN ('pending', 'approved');
+    """)
+
+    # 14. Create Employee Self-Service My Tickets Portal View (`v_user_my_tickets_portal`)
+    cursor.execute("DROP VIEW IF EXISTS v_user_my_tickets_portal;")
+    cursor.execute("""
+    CREATE VIEW IF NOT EXISTS v_user_my_tickets_portal AS
+    SELECT 
+        mr.request_id AS ticket_id,
+        'MAINTENANCE REPAIR' AS ticket_type,
+        mr.priority_level AS priority,
+        a.asset_tag,
+        a.asset_name,
+        mr.issue_title AS summary,
+        mr.detailed_description AS details,
+        mr.requested_by,
+        COALESCE(u.user_id, 'usr-02') AS user_id,
+        mr.status,
+        CASE 
+            WHEN mr.status = 'pending' THEN 25
+            WHEN mr.status IN ('in-progress', 'in_progress') THEN 50
+            WHEN mr.status = 'approved' THEN 75
+            WHEN mr.status IN ('completed', 'resolved') THEN 100
+            ELSE 10
+        END AS progress_percentage,
+        CASE 
+            WHEN mr.status = 'pending' THEN 'Ticket logged; awaiting technician dispatch.'
+            WHEN mr.status IN ('in-progress', 'in_progress') THEN 'Technician actively diagnosing / repairing asset.'
+            WHEN mr.status = 'approved' THEN 'Repair quote approved; replacement parts ordered.'
+            WHEN mr.status IN ('completed', 'resolved') THEN 'Repair completed and verified. Asset returned.'
+            ELSE 'Status under review.'
+        END AS progress_description,
+        mr.created_at AS raised_date
+    FROM maintenance_requests mr
+    JOIN assets a ON a.asset_id = mr.asset_id
+    LEFT JOIN users u ON u.name = mr.requested_by
+
+    UNION ALL
+
+    SELECT 
+        tr.transfer_id AS ticket_id,
+        'ASSET TRANSFER' AS ticket_type,
+        'medium' AS priority,
+        a.asset_tag,
+        a.asset_name,
+        'Reassignment Request' AS summary,
+        tr.transfer_reason AS details,
+        u_req.name AS requested_by,
+        tr.requested_by_id AS user_id,
+        tr.status,
+        CASE 
+            WHEN tr.status = 'pending' THEN 33
+            WHEN tr.status = 'approved' THEN 66
+            WHEN tr.status = 'completed' THEN 100
+            ELSE 15
+        END AS progress_percentage,
+        CASE 
+            WHEN tr.status = 'pending' THEN 'Transfer request submitted; awaiting manager sign-off.'
+            WHEN tr.status = 'approved' THEN 'Transfer approved; physical handover scheduled.'
+            WHEN tr.status = 'completed' THEN 'Handover complete. Custody record updated.'
+            ELSE 'Under verification.'
+        END AS progress_description,
+        tr.request_date AS raised_date
+    FROM transfer_requests tr
+    JOIN assets a ON a.asset_id = tr.asset_id
+    JOIN users u_req ON u_req.user_id = tr.requested_by_id;
     """)
 
     conn.commit()
@@ -625,9 +691,16 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
             <span class="brand-badge">PostgreSQL / SQLite Pure Engine</span>
         </div>
         <div class="header-meta">
-            <span><span class="status-dot"></span> Active Engine: <code>assetflow_local.db</code></span>
+            <span style="font-weight: 600; color: #334155;">👤 Active Persona: 
+                <select id="persona-select" onchange="switchPersona(this.value)" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: #ffffff; font-weight: 600; color: var(--accent-primary);">
+                    <option value="admin">👑 Admin / Helpdesk Operator</option>
+                    <option value="usr-02">🙋‍♀️ Priya Sharma (Employee - usr-02)</option>
+                    <option value="usr-06">🙋‍♂️ Marcus Vance (Employee - usr-06)</option>
+                    <option value="usr-05">🙋‍♀️ Elena Rostova (Employee - usr-05)</option>
+                </select>
+            </span>
             <span style="color: #cbd5e1;">|</span>
-            <span>Zero API Middleman</span>
+            <span><span class="status-dot"></span> Engine: <code>assetflow_local.db</code></span>
         </div>
     </header>
 
@@ -647,17 +720,23 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
             <!-- Query Studio & Scenarios Panel -->
             <div class="panel">
                 <div class="panel-header">
-                    <h3 class="panel-title">Direct SQL Query & Simulation Studio</h3>
+                    <h3 class="panel-title" id="studio-title">Direct SQL Query & Simulation Studio (Admin View)</h3>
                     <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 500;">Supports DDL, Queries & Atomic Multi-Statement Mutations</span>
                 </div>
 
                 <!-- One-Click Scenario Demos -->
-                <div class="scenario-toolbar">
+                <div class="scenario-toolbar" id="toolbar-admin">
                     <button class="scenario-pill" onclick="loadScenario('kpis')">📊 Dashboard KPIs (Sub-15ms)</button>
                     <button class="scenario-pill" onclick="loadScenario('valuation')">💰 Depreciation & Valuation Engine</button>
                     <button class="scenario-pill" onclick="loadScenario('quickscan')">⚡ Barcode Quick-Scan Checkout</button>
                     <button class="scenario-pill" onclick="loadScenario('overlap')">🛡️ Test Booking Overlap Protection</button>
-                    <button class="scenario-pill" onclick="loadScenario('tickets')" style="background: #ecfdf5; border-color: #10b981; color: #059669;">🎟️ Observe Raised Tickets Queue</button>
+                    <button class="scenario-pill" onclick="loadScenario('tickets')" style="background: #ecfdf5; border-color: #10b981; color: #059669;">🎟️ All Company Raised Tickets</button>
+                </div>
+
+                <div class="scenario-toolbar" id="toolbar-user" style="display: none; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1;">
+                    <button class="scenario-pill" onclick="loadScenario('my_tickets')" style="background: #eff6ff; border-color: #3b82f6; color: #1d4ed8;">🙋‍♀️ My Raised Tickets & Progress</button>
+                    <button class="scenario-pill" onclick="loadScenario('my_assets')" style="background: #fdf4ff; border-color: #d946ef; color: #a21caf;">📦 My Currently Assigned Devices</button>
+                    <button class="scenario-pill" onclick="loadScenario('submit_ticket')" style="background: #ecfdf5; border-color: #10b981; color: #059669;">➕ Submit New Repair Ticket (Atomic)</button>
                 </div>
 
                 <textarea id="sql-input" rows="3">SELECT * FROM assets;</textarea>
@@ -757,11 +836,54 @@ SELECT asset_id, asset_tag, asset_name, lifecycle_status, 'Quick-scan Check-out 
     'Booking Rejected - Time slot overlap detected!' AS validation_result,
     'TanStack Query automatically rolled back UI' AS frontend_behavior;`;
             } else if (type === 'tickets') {
-                title.textContent = 'Scenario: Unified Raised Tickets Queue (v_raised_tickets_queue)';
+                title.textContent = 'Scenario: Unified Raised Tickets Queue (All Company View)';
                 input.value = `SELECT * FROM v_raised_tickets_queue ORDER BY raised_date DESC;`;
+            } else if (type === 'my_tickets') {
+                const user = document.getElementById('persona-select').value;
+                title.textContent = `Scenario: My Raised Tickets & Resolution Progress (${user})`;
+                input.value = `SELECT ticket_id, ticket_type, priority, asset_tag, summary, status, progress_percentage || '%' AS progress, progress_description 
+FROM v_user_my_tickets_portal 
+WHERE user_id = '${user}'
+ORDER BY raised_date DESC;`;
+            } else if (type === 'my_assets') {
+                const user = document.getElementById('persona-select').value;
+                title.textContent = `Scenario: My Currently Assigned Devices (${user})`;
+                input.value = `SELECT a.asset_tag, a.asset_name, a.lifecycle_status, alloc.allocation_date, alloc.expected_return_date
+FROM asset_allocations alloc
+JOIN assets a ON a.asset_id = alloc.asset_id
+WHERE alloc.user_id = '${user}' AND alloc.actual_return_date IS NULL;`;
+            } else if (type === 'submit_ticket') {
+                const user = document.getElementById('persona-select').value;
+                title.textContent = `Scenario: Submit New Repair Ticket via Employee Self-Service (${user})`;
+                input.value = `INSERT INTO maintenance_requests (request_id, asset_id, requested_by, priority_level, issue_title, detailed_description, status, created_at)
+SELECT 'MNT-' || CAST(strftime('%s', 'now') AS TEXT), 'ASSET-DEMO-01', name, 'high', 'Battery Drain & Overheating Issue', 'Device battery drops from 100% to 15% in 30 mins during compiling', 'pending', date('now')
+FROM users WHERE user_id = '${user}';
+
+SELECT ticket_id, ticket_type, priority, asset_tag, summary, status, progress_percentage || '%' AS progress, progress_description 
+FROM v_user_my_tickets_portal WHERE user_id = '${user}' ORDER BY raised_date DESC LIMIT 3;`;
             }
             runQuery();
         }
+
+        function switchPersona(role) {
+            const studioTitle = document.getElementById('studio-title');
+            const toolbarAdmin = document.getElementById('toolbar-admin');
+            const toolbarUser = document.getElementById('toolbar-user');
+
+            if (role === 'admin') {
+                studioTitle.textContent = 'Direct SQL Query & Simulation Studio (Admin / Helpdesk View)';
+                toolbarAdmin.style.display = 'flex';
+                toolbarUser.style.display = 'none';
+                loadScenario('tickets');
+            } else {
+                const name = document.querySelector(`#persona-select option[value="${role}"]`).textContent;
+                studioTitle.textContent = `Employee Self-Service Portal (${name})`;
+                toolbarAdmin.style.display = 'none';
+                toolbarUser.style.display = 'flex';
+                loadScenario('my_tickets');
+            }
+        }
+
 
         async function runQuery() {
             const sql = document.getElementById('sql-input').value;
