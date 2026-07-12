@@ -24,6 +24,7 @@ export default function App() {
   const [passwordInput, setPasswordInput] = useState('••••••••');
   const [loginRole, setLoginRole] = useState<UserRole>('admin');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
   // Filters for Asset Directory
   const [searchQuery, setSearchQuery] = useState('');
@@ -191,59 +192,200 @@ export default function App() {
       </svg>
 
       {!isLoggedIn ? (
-        <div id="login-screen">
-          <div className="login-card">
-            <div className="brand">
-              <div className="brand-mark"></div>
-              <span>AssetFlow</span>
+        <div className="landing-body" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div className="glow glow-1"></div>
+          <div className="glow glow-2"></div>
+
+          <header className="landing-header">
+            <div className="logo">
+              <span className="logo-mark-blue">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L10 6L14 10L20 4" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 4H20V10" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </span>
+              AssetFlow
             </div>
-            <div className="field">
-              <label>Work email</label>
-              <input 
-                type="text" 
-                value={emailInput} 
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setEmailInput(val);
-                  if (val.includes('priya') || val.includes('admin')) setLoginRole('admin');
-                  else if (val.includes('anita') || val.includes('manager')) setLoginRole('manager');
-                  else if (val.includes('sam') || val.includes('head')) setLoginRole('head');
-                  else if (val.includes('jordan') || val.includes('employee')) setLoginRole('employee');
-                }} 
-              />
+            <nav className="links">
+              <a href="#">Home</a>
+              <a href="#">Features</a>
+              <a href="#">Solutions</a>
+              <a href="#">Pricing</a>
+              <a href="#">About</a>
+              <a href="#">Contact</a>
+            </nav>
+            <div className="nav-actions">
+              <button className="btn-ghost" onClick={() => setShowLoginModal(true)}>Login</button>
+              <button className="btn-primary-blue" onClick={() => setShowLoginModal(true)}>Get Started</button>
             </div>
-            <div className="field">
-              <label>Simulation Role Override</label>
-              <select 
-                value={loginRole} 
-                onChange={(e) => {
-                  const r = e.target.value as UserRole;
-                  setLoginRole(r);
-                  if (r === 'admin') setEmailInput('priya.nair@company.com');
-                  else if (r === 'manager') setEmailInput('anita.desai@company.com');
-                  else if (r === 'head') setEmailInput('sam.lee@company.com');
-                  else if (r === 'employee') setEmailInput('jordan.blake@company.com');
-                }}
-              >
-                <option value="admin">Admin (Priya Nair)</option>
-                <option value="manager">Asset Manager (Anita Desai)</option>
-                <option value="head">Department Head (Sam Lee)</option>
-                <option value="employee">Standard Employee (Jordan Blake)</option>
-              </select>
+          </header>
+
+          <section className="landing-hero">
+            <div className="hero-copy" style={{ position: 'relative', zIndex: 1 }}>
+              <div className="eyebrow-blue"><span className="dot"></span> Now tracking 40,000+ assets live</div>
+              <h1 className="landing-title">Manage Every Asset with <span className="accent">Total Confidence</span></h1>
+              <p className="lede">Track every asset in real time, monitor inventory across every site, schedule preventive maintenance automatically, and give your operations team a single source of truth — all from one clean, powerful dashboard.</p>
+
+              <div className="hero-ctas">
+                <button className="btn-cta-blue" onClick={() => setShowLoginModal(true)}>
+                  Get Started Free
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+                <button className="btn-watch-landing" onClick={() => setShowLoginModal(true)}>
+                  <span className="play-circle-landing">
+                    <svg viewBox="0 0 24 24" fill="#14161a"><path d="M8 5v14l11-7z"/></svg>
+                  </span>
+                  Watch Demo
+                </button>
+              </div>
+
+              <div className="trust">
+                <p>Trusted by 500+ organizations worldwide</p>
+                <div className="trust-logos">
+                  <span>Nordholm</span>
+                  <span>Vantage&nbsp;Rail</span>
+                  <span>Circa</span>
+                  <span>Portside&nbsp;Logistics</span>
+                  <span>Ferrow</span>
+                </div>
+              </div>
             </div>
-            <div className="field">
-              <label>Password</label>
-              <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />
+
+            <div className="preview-wrap">
+              <div className="card-glow"></div>
+              <div className="float-badge top"><span className="pulse"></span> QR scan into Warehouse 3</div>
+
+              <div className="dash-card">
+                <div className="col">
+                  <div className="mini-card">
+                    <div className="label">
+                      <span className="icon-dot" style={{ background: '#e7edff' }}>
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M3 17l6-6 4 4 8-8" stroke="#2f5bff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                      Utilization Trend
+                    </div>
+                    <div className="trend-value">78.4%</div>
+                    <div className="trend-chart">
+                      <div className="bar" style={{ height: '35%' }}></div>
+                      <div className="bar" style={{ height: '52%' }}></div>
+                      <div className="bar" style={{ height: '40%' }}></div>
+                      <div className="bar" style={{ height: '68%' }}></div>
+                      <div className="bar" style={{ height: '58%' }}></div>
+                      <div className="bar" style={{ height: '82%' }}></div>
+                      <div className="bar" style={{ height: '100%' }}></div>
+                    </div>
+                    <div className="trend-foot"><span>Mon</span><span>Wed</span><span>Fri</span><span>Sun</span></div>
+                  </div>
+
+                  <div className="mini-card activity-card">
+                    <div className="label">
+                      <span className="icon-dot" style={{ background: '#eef0f2' }}>
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 6v6l4 2" stroke="#6b6e73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" stroke="#6b6e73" strokeWidth="2"/></svg>
+                      </span>
+                      Recent Activity
+                    </div>
+                    <div className="activity-item ok">
+                      <span className="icon-dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                      <div className="txt"><strong>Forklift #A-204 passed inspection</strong><span>2 minutes ago</span></div>
+                    </div>
+                    <div className="activity-item warn">
+                      <span className="icon-dot"><svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16h.01" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" strokeWidth="2"/></svg></span>
+                      <div className="txt"><strong>HVAC Unit B-12 maintenance due in 2 days</strong><span>Scheduled reminder</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col">
+                  <div className="mini-card alert-card">
+                    <div className="label" style={{ color: '#7a5a26' }}>
+                      <span className="icon-dot"><svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16h.01" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                      Maintenance Alert
+                    </div>
+                    <p className="body-text">3 assets need attention this week across 2 sites.</p>
+                  </div>
+
+                  <div className="mini-card gauge-card">
+                    <div className="gauge">
+                      <svg width="76" height="76" viewBox="0 0 76 76">
+                        <circle cx="38" cy="38" r="32" fill="none" stroke="#eceef1" strokeWidth="8"/>
+                        <circle cx="38" cy="38" r="32" fill="none" stroke="#17a672" strokeWidth="8"
+                          strokeDasharray="201" strokeDashoffset="36" strokeLinecap="round"/>
+                      </svg>
+                      <div className="pct">82%</div>
+                    </div>
+                    <div className="gauge-meta">
+                      <span style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.03em', color: '#6b6e73' }}>Inventory Health</span>
+                      <strong>Good</strong>
+                      <span className="tag">On track</span>
+                    </div>
+                  </div>
+
+                  <div className="qr-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="#9a9da3" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" stroke="#9a9da3" stroke-width="2"/><rect x="3" y="14" width="7" height="7" stroke="#9a9da3" stroke-width="2"/></svg>
+                    Last synced 12s ago
+                  </div>
+                </div>
+              </div>
             </div>
-            <button className="btn btn-primary btn-block" onClick={handleLogin}>Sign in</button>
-            <div className="link-row">
-              <a>Create an account</a>
-              <a>Forgot password?</a>
+          </section>
+
+          {/* Simulated Login Modal Overlay */}
+          {showLoginModal && (
+            <div className="modal-overlay" style={{ display: 'flex' }}>
+              <div className="login-card">
+                <div className="modal-head" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="brand" style={{ margin: 0 }}>
+                    <div className="brand-mark"></div>
+                    <span style={{ color: 'var(--text)' }}>AssetFlow</span>
+                  </div>
+                  <button className="modal-close" onClick={() => setShowLoginModal(false)}>×</button>
+                </div>
+                <div className="field">
+                  <label>Work email</label>
+                  <input 
+                    type="text" 
+                    value={emailInput} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEmailInput(val);
+                      if (val.includes('priya') || val.includes('admin')) setLoginRole('admin');
+                      else if (val.includes('anita') || val.includes('manager')) setLoginRole('manager');
+                      else if (val.includes('sam') || val.includes('head')) setLoginRole('head');
+                      else if (val.includes('jordan') || val.includes('employee')) setLoginRole('employee');
+                    }} 
+                  />
+                </div>
+                <div className="field">
+                  <label>Simulation Role Override</label>
+                  <select 
+                    value={loginRole} 
+                    onChange={(e) => {
+                      const r = e.target.value as UserRole;
+                      setLoginRole(r);
+                      if (r === 'admin') setEmailInput('priya.nair@company.com');
+                      else if (r === 'manager') setEmailInput('anita.desai@company.com');
+                      else if (r === 'head') setEmailInput('sam.lee@company.com');
+                      else if (r === 'employee') setEmailInput('jordan.blake@company.com');
+                    }}
+                  >
+                    <option value="admin">Admin (Priya Nair)</option>
+                    <option value="manager">Asset Manager (Anita Desai)</option>
+                    <option value="head">Department Head (Sam Lee)</option>
+                    <option value="employee">Standard Employee (Jordan Blake)</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Password</label>
+                  <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />
+                </div>
+                <button className="btn btn-primary btn-block" onClick={handleLogin}>Sign in</button>
+                <div className="link-row">
+                  <a>Create an account</a>
+                  <a>Forgot password?</a>
+                </div>
+                <div className="note-box">
+                  Signup only creates a standard employee account. Roles are granted later by an admin from the employee directory.
+                </div>
+              </div>
             </div>
-            <div className="note-box">
-              Signup only creates a standard employee account. Roles are granted later by an admin from the employee directory.
-            </div>
-          </div>
+          )}
         </div>
       ) : (
         <>
