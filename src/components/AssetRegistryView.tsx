@@ -4,7 +4,15 @@ import { Asset, AssetStatus } from '../types';
 import { Search, Eye, X, ClipboardCheck, Wrench, ShieldAlert } from 'lucide-react';
 
 export const AssetRegistryView: React.FC = () => {
-  const { assets, categories } = useAppState();
+  const { 
+    assets, 
+    categories, 
+    activeRole, 
+    currentUser, 
+    allocateAsset, 
+    addToast,
+    users
+  } = useAppState();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -159,13 +167,42 @@ export const AssetRegistryView: React.FC = () => {
                     </td>
                     <td className="p-4">{getStatusBadge(asset.status)}</td>
                     <td className="p-4 text-right">
-                      <button
-                        onClick={() => setSelectedAsset(asset)}
-                        className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold py-1 px-2.5 rounded-lg transition-colors inline-flex ml-auto cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View
-                      </button>
+                      <div className="flex justify-end gap-1.5">
+                        {activeRole === 'Employee' && asset.status === 'Available' && (
+                          <button
+                            onClick={() => {
+                              allocateAsset(asset.tag, currentUser?.id || '', 'Requested allocation via registry');
+                            }}
+                            className="bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1 px-2 rounded-lg transition-colors cursor-pointer"
+                          >
+                            Request Allocation
+                          </button>
+                        )}
+                        {activeRole === 'Employee' && asset.status === 'Allocated' && asset.currentHolderId !== currentUser?.id && (
+                          <button
+                            onClick={() => {
+                              const partner = prompt("Enter Colleague email to transfer to:");
+                              if (!partner) return;
+                              const target = users.find(u => u.email.toLowerCase() === partner.toLowerCase());
+                              if (target) {
+                                addToast('Transfer Requested', `Request to transfer ${asset.name} to ${target.name} was forwarded to HOD.`, 'success');
+                              } else {
+                                alert("Colleague email not found.");
+                              }
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1 px-2 rounded-lg transition-colors cursor-pointer"
+                          >
+                            Request Transfer
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedAsset(asset)}
+                          className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold py-1 px-2.5 rounded-lg transition-colors inline-flex cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

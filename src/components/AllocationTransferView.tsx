@@ -104,12 +104,18 @@ export const AllocationTransferView: React.FC = () => {
   };
 
   const handleApproveRequest = (req: TransferRequest) => {
-    // Perform transfer
-    const success = transferAsset(req.assetTag, req.requestedById, `Transfer approved from ${req.currentHolderName} by Manager`);
-    if (success) {
-      setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r));
+    if (activeRole === 'Department Head') {
+      // HOD approves and forwards
+      setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'Approved by HOD' as any } : r));
+      alert(`Request approved by you (HOD) and forwarded to the Asset Manager.`);
     } else {
-      alert('Transfer failed. Please check asset availability.');
+      // Manager/Admin performs the final transfer
+      const success = transferAsset(req.assetTag, req.requestedById, `Transfer approved from ${req.currentHolderName} by Manager`);
+      if (success) {
+        setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r));
+      } else {
+        alert('Transfer failed. Please check asset availability.');
+      }
     }
   };
 
@@ -250,9 +256,11 @@ export const AllocationTransferView: React.FC = () => {
                           ? 'bg-amber-50 text-amber-600 border border-amber-100' 
                           : req.status === 'Approved' 
                             ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                            : 'bg-rose-50 text-rose-600 border border-rose-100'
+                            : req.status === 'Approved by HOD' as any
+                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                              : 'bg-rose-50 text-rose-600 border border-rose-100'
                       }`}>
-                        {req.status}
+                        {req.status === 'Approved by HOD' as any ? 'Forwarded to Manager' : req.status}
                       </span>
                     </div>
 
@@ -271,20 +279,44 @@ export const AllocationTransferView: React.FC = () => {
                       EXPECTED RETURN: {req.expectedReturnDate}
                     </div>
 
-                    {req.status === 'Pending' && (
+                    {/* HOD / Manager approval workflows */}
+                    {req.status === 'Pending' && activeRole === 'Department Head' && (
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={() => handleApproveRequest(req)}
-                          disabled={activeRole === 'Employee'}
-                          className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                          className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
-                          Approve
+                          Approve & Forward
                         </button>
                         <button
                           onClick={() => handleRejectRequest(req.id)}
-                          disabled={activeRole === 'Employee'}
-                          className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
+                          className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      </div>
+                    )}
+
+                    {req.status === 'Approved by HOD' as any && activeRole === 'Department Head' && (
+                      <div className="text-[10px] text-blue-600 font-bold bg-blue-50/50 p-2 rounded-lg border border-blue-100 text-center select-none">
+                        ✓ Approved & Forwarded to Asset Manager
+                      </div>
+                    )}
+
+                    {(req.status === 'Pending' || req.status === 'Approved by HOD' as any) && (activeRole === 'Asset Manager' || activeRole === 'Admin') && (
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleApproveRequest(req)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          {req.status === 'Approved by HOD' as any ? 'Allocate / Complete' : 'Approve & Allocate'}
+                        </button>
+                        <button
+                          onClick={() => handleRejectRequest(req.id)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           Reject

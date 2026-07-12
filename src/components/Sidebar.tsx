@@ -30,6 +30,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     if (menu === 'OrgSetup') {
       return activeRole === 'Admin';
     }
+    if (menu === 'AllocationTransfer') {
+      return activeRole !== 'Employee'; // Employees do not see the admin allocation approval queue
+    }
     if (menu === 'AssetAudit') {
       return activeRole !== 'Employee'; // Admin, Asset Manager, Department Head can audit
     }
