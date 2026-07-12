@@ -174,6 +174,9 @@
 
   /* ---------- Modern Premium Enterprise Analytics Chart (Glassmorphism) ---------- */
   .chart-glass-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
@@ -906,7 +909,7 @@
               </div>
 
               <!-- SVG Curved Area Chart with Gradient -->
-              <svg class="chart-svg-container" viewBox="0 0 500 180" preserveAspectRatio="none">
+              <svg class="chart-svg-container" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 180" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45" />
