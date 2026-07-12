@@ -185,6 +185,27 @@ def run_simulation():
         t_id, t_type, prio, tag, summary, status = r
         print(f"{t_id:<10} | {t_type:<12} | {prio:<10} | {tag:<12} | {summary:<35} | {status}")
 
+    # =========================================================================
+    # 6. EMPLOYEE SELF-SERVICE PORTAL & MY TICKET PROGRESS (`v_user_my_tickets_portal`)
+    # =========================================================================
+    print_header("6. Employee Self-Service Portal & My Ticket Progress (`usr-02` Priya Sharma)")
+    
+    cursor.execute("""
+        SELECT ticket_id, ticket_type, asset_tag, SUBSTR(summary, 1, 30) AS short_summary, 
+               progress_percentage || '%' AS progress, SUBSTR(progress_description, 1, 40) AS step_desc
+        FROM v_user_my_tickets_portal
+        WHERE user_id = 'usr-02'
+        ORDER BY raised_date DESC
+        LIMIT 5;
+    """)
+    rows = cursor.fetchall()
+    print(f"[USER LOGGED IN] Priya Sharma (Employee ID: 'usr-02')")
+    print(f"{'TICKET ID':<10} | {'TYPE':<18} | {'ASSET TAG':<12} | {'SUMMARY / ISSUE':<30} | {'PROGRESS':<10} | {'CURRENT RESOLUTION STEP'}")
+    print("-" * 115)
+    for r in rows:
+        t_id, t_type, tag, summary, prog, desc = r
+        print(f"{t_id:<10} | {t_type:<18} | {tag:<12} | {summary:<30} | {prog:<10} | {desc}")
+
     conn.close()
     print("\n" + "="*80)
     print(" [COMPLETE] SIMULATION COMPLETE - ASSETFLOW ERP ENGINE IS 100% VERIFIED AND READY")

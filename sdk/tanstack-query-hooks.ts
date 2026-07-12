@@ -77,6 +77,22 @@ export interface RaisedTicketItem {
   raised_date: string;
 }
 
+export interface UserTicketProgressItem {
+  ticket_id: string;
+  ticket_type: 'MAINTENANCE REPAIR' | 'ASSET TRANSFER';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  asset_tag: string;
+  asset_name: string;
+  summary: string;
+  details: string;
+  requested_by: string;
+  user_id: string;
+  status: string;
+  progress_percentage: number;
+  progress_description: string;
+  raised_date: string;
+}
+
 export interface QuickScanResult {
   result_action: 'CHECK_OUT' | 'CHECK_IN';
   asset_tag: string;
@@ -327,4 +343,68 @@ export function useRaisedTicketsQueue(options?: Partial<UseQueryOptions<RaisedTi
     ...options,
   });
 }
+
+// ============================================================================
+// SCREEN 9: EMPLOYEE SELF-SERVICE PORTAL & MY TICKET PROGRESS TRACKING
+// ============================================================================
+
+/**
+ * Hook: `useMyTicketProgress`
+ * Polls `v_user_my_tickets_portal` filtered by `userId` to let standard employees
+ * track the quantitative progress percentage (`25%` -> `100%`) of their repairs.
+ */
+export function useMyTicketProgress(userId: string, options?: Partial<UseQueryOptions<UserTicketProgressItem[], Error>>) {
+  return useQuery<UserTicketProgressItem[], Error>({
+    queryKey: ['my_tickets', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_user_my_tickets_portal')
+        .select('*')
+        .eq('user_id', userId)
+        .order('raised_date', { ascending: false });
+
+      if (error) throw new Error(`My Tickets Progress Query Failed: ${error.message}`);
+      return data as UserTicketProgressItem[];
+    },
+    refetchInterval: 5000, // Live progress tracking every 5 seconds
+    staleTime: 2000,
+    ...options,
+  });
+}
+
+/**
+ * Hook: `useRaiseUserTicket`
+ * Enables an employee to submit a new maintenance/repair ticket via `fn_raise_user_ticket()`.
+ * Automatically invalidates their personal tracking queue and company KPIs on success.
+ */
+export function useRaiseUserTicket() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, assetTag, issueTitle, detailedDescription, priority = 'medium' }: {
+      userId: string;
+      assetTag: string;
+      issueTitle: string;
+      detailedDescription?: string;
+      priority?: 'low' | 'medium' | 'high' | 'critical';
+    }) => {
+      const { data, error } = await supabase.rpc('fn_raise_user_ticket', {
+        p_user_id: userId,
+        p_asset_tag: assetTag,
+        p_issue_title: issueTitle,
+        p_detailed_description: detailedDescription || null,
+        p_priority: priority,
+      });
+
+      if (error) throw new Error(`Ticket Submission Failed: ${error.message}`);
+      return data && data[0];
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['my_tickets', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets', 'raised_queue'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard_kpis'] });
+    },
+  });
+}
+
 
