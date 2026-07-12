@@ -63,6 +63,20 @@ export interface AssetFinancialValuation {
   write_off_recommended: boolean;
 }
 
+export interface RaisedTicketItem {
+  ticket_id: string;
+  ticket_type: 'MAINTENANCE' | 'TRANSFER';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  asset_tag: string;
+  asset_name: string;
+  summary: string;
+  details: string;
+  requested_by: string;
+  status: string;
+  financial_impact: number;
+  raised_date: string;
+}
+
 export interface QuickScanResult {
   result_action: 'CHECK_OUT' | 'CHECK_IN';
   asset_tag: string;
@@ -285,3 +299,32 @@ export function useApproveMaintenanceRequest() {
     },
   });
 }
+
+// ============================================================================
+// SCREEN 8: UNIFIED RAISED TICKETS QUEUE & HELPDESK OBSERVATION
+// ============================================================================
+
+/**
+ * Hook: `useRaisedTicketsQueue`
+ * Observes all tickets raised across Maintenance Requests (repairs/issues)
+ * and Transfer Requests (reassignments) via `v_raised_tickets_queue`.
+ * Polls every 5 seconds to provide live helpdesk queue visibility.
+ */
+export function useRaisedTicketsQueue(options?: Partial<UseQueryOptions<RaisedTicketItem[], Error>>) {
+  return useQuery<RaisedTicketItem[], Error>({
+    queryKey: ['tickets', 'raised_queue'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_raised_tickets_queue')
+        .select('*')
+        .order('raised_date', { ascending: false });
+
+      if (error) throw new Error(`Raised Tickets Query Failed: ${error.message}`);
+      return data as RaisedTicketItem[];
+    },
+    refetchInterval: 5000, // Live queue polling every 5 seconds
+    staleTime: 2000,
+    ...options,
+  });
+}
+

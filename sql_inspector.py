@@ -191,6 +191,45 @@ def setup_local_database():
     else:
         print(f"[WARN] Seed file '{seed_file}' not found.")
 
+    # 13. Create Unified Raised Tickets Queue View (`v_raised_tickets_queue`)
+    cursor.execute("""
+    CREATE VIEW IF NOT EXISTS v_raised_tickets_queue AS
+    SELECT 
+        mr.request_id AS ticket_id,
+        'MAINTENANCE' AS ticket_type,
+        mr.priority_level AS priority,
+        a.asset_tag,
+        a.asset_name,
+        mr.issue_title AS summary,
+        mr.detailed_description AS details,
+        mr.requested_by,
+        mr.status,
+        mr.estimated_cost AS financial_impact,
+        mr.created_at AS raised_date
+    FROM maintenance_requests mr
+    JOIN assets a ON a.asset_id = mr.asset_id
+    WHERE mr.status IN ('pending', 'in-progress', 'approved')
+
+    UNION ALL
+
+    SELECT 
+        tr.transfer_id AS ticket_id,
+        'TRANSFER' AS ticket_type,
+        'medium' AS priority,
+        a.asset_tag,
+        a.asset_name,
+        'Asset Reassignment Request' AS summary,
+        tr.transfer_reason AS details,
+        u_req.name AS requested_by,
+        tr.status,
+        0.00 AS financial_impact,
+        tr.request_date AS raised_date
+    FROM transfer_requests tr
+    JOIN assets a ON a.asset_id = tr.asset_id
+    JOIN users u_req ON u_req.user_id = tr.requested_by_id
+    WHERE tr.status IN ('pending', 'approved');
+    """)
+
     conn.commit()
     conn.close()
     print("[OK] Local Database initialized and pre-seeded at 'assetflow_local.db'.")
@@ -618,6 +657,7 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
                     <button class="scenario-pill" onclick="loadScenario('valuation')">💰 Depreciation & Valuation Engine</button>
                     <button class="scenario-pill" onclick="loadScenario('quickscan')">⚡ Barcode Quick-Scan Checkout</button>
                     <button class="scenario-pill" onclick="loadScenario('overlap')">🛡️ Test Booking Overlap Protection</button>
+                    <button class="scenario-pill" onclick="loadScenario('tickets')" style="background: #ecfdf5; border-color: #10b981; color: #059669;">🎟️ Observe Raised Tickets Queue</button>
                 </div>
 
                 <textarea id="sql-input" rows="3">SELECT * FROM assets;</textarea>
@@ -647,7 +687,7 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
     <script>
         const CORE_TABLES = ['assets', 'asset_allocations', 'resource_bookings', 'maintenance_requests'];
         const ORG_TABLES = ['users', 'departments', 'asset_categories', 'transfer_requests'];
-        const AUDIT_TABLES = ['activity_logs', 'audit_cycles', 'audit_records', 'notifications'];
+        const AUDIT_TABLES = ['activity_logs', 'audit_cycles', 'audit_records', 'notifications', 'v_raised_tickets_queue'];
 
         async function fetchTables() {
             const res = await fetch('/api/tables');
@@ -716,6 +756,9 @@ SELECT asset_id, asset_tag, asset_name, lifecycle_status, 'Quick-scan Check-out 
     'Error 23P01: btree_gist exclusion constraint && violation' AS database_engine_status,
     'Booking Rejected - Time slot overlap detected!' AS validation_result,
     'TanStack Query automatically rolled back UI' AS frontend_behavior;`;
+            } else if (type === 'tickets') {
+                title.textContent = 'Scenario: Unified Raised Tickets Queue (v_raised_tickets_queue)';
+                input.value = `SELECT * FROM v_raised_tickets_queue ORDER BY raised_date DESC;`;
             }
             runQuery();
         }

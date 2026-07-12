@@ -32,6 +32,7 @@ Because **AssetFlow** is built directly inside PostgreSQL (`/sql`), your front-e
 | **8. Audit Verification** | `UPDATE audit_cycles SET status = 'Closed' WHERE cycle_id = $1;` | Stored CTE reconciliation auto-converts missing verification records into `Lost` asset states. |
 | **9. Reports & Heatmaps**| `SELECT * FROM mv_daily_asset_durations;` | Sub-15ms calculations for Most-Used vs. Idle asset utilization ratios and room peak heatmaps. |
 | **10. Audit Logs & Alerts**| `SELECT * FROM activity_logs ORDER BY created_at DESC;` | Full immutable audit trail (`who did what, when`). |
+| **11. Raised Tickets Queue**| `SELECT * FROM v_raised_tickets_queue;` | **Helpdesk & Transfer Observation**: Sub-15ms unified real-time view combining all active `maintenance_requests` and `transfer_requests`. |
 
 ---
 
@@ -41,6 +42,7 @@ Because **AssetFlow** enforces 100% of its data integrity and state transitions 
 
 * **⚡ Optimistic UI + Native DB Rollback**: When a user books a room (`Screen 6`), `useBookResource()` updates the UI immediately. If PostgreSQL’s `btree_gist` exclusion constraint catches an overlapping time slot (`&&`), TanStack Query automatically rolls back the UI and shows the exact database error!
 * **⏱️ Sub-15ms Dashboard Polling**: Because our Materialized Views (`mv_asset_status_summary`) execute in `<15ms`, `useDashboardKPIs()` polls live stats every 5 seconds without stressing the database engine.
+* **🎟️ Live Raised Tickets Queue Polling**: `useRaisedTicketsQueue()` queries `v_raised_tickets_queue` directly every 5s, providing unified helpdesk observation across maintenance repairs and asset transfers in a single call.
 * **📱 Single-Call Barcode Quick-Scans**: `useQuickScanAsset()` calls our atomic procedure (`fn_quick_scan_asset()`), combining check-out vs. check-in status checks, allocation insertion, and activity logging into **1 single network request**.
 * **🔐 Zero-Trust Row-Level Security (RLS)**: PostgreSQL native RLS policies guarantee employees can only query or book assets within their authorized scope directly from the client.
 

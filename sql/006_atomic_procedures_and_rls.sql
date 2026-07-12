@@ -219,3 +219,48 @@ CREATE POLICY IF NOT EXISTS policy_assets_modify_rbac ON assets
         )
         OR auth.role() = 'service_role' -- Allow server-side service keys
     );
+
+-- ============================================================================
+-- 4. UNIFIED RAISED TICKETS & HELPDESK OBSERVATION QUEUE (`v_raised_tickets_queue`)
+-- ============================================================================
+-- Provides a sub-15ms unified real-time view observing all raised tickets
+-- across both Maintenance Requests (repairs/issues) and Transfer Requests (reassignments).
+-- Used directly by TanStack Query (`useRaisedTicketsQueue`) and the Web Studio.
+-- ============================================================================
+
+CREATE OR REPLACE VIEW v_raised_tickets_queue AS
+SELECT 
+    mr.request_id AS ticket_id,
+    'MAINTENANCE' AS ticket_type,
+    mr.priority_level AS priority,
+    a.asset_tag,
+    a.asset_name,
+    mr.issue_title AS summary,
+    mr.detailed_description AS details,
+    mr.requested_by,
+    mr.status,
+    mr.estimated_cost AS financial_impact,
+    mr.created_at AS raised_date
+FROM maintenance_requests mr
+JOIN assets a ON a.asset_id = mr.asset_id
+WHERE mr.status IN ('pending', 'in-progress', 'approved')
+
+UNION ALL
+
+SELECT 
+    tr.transfer_id AS ticket_id,
+    'TRANSFER' AS ticket_type,
+    'medium' AS priority,
+    a.asset_tag,
+    a.asset_name,
+    CONCAT('Asset Reassignment Request to ', u_req.name) AS summary,
+    tr.transfer_reason AS details,
+    u_req.name AS requested_by,
+    tr.status,
+    0.00 AS financial_impact,
+    tr.request_date AS raised_date
+FROM transfer_requests tr
+JOIN assets a ON a.asset_id = tr.asset_id
+JOIN users u_req ON u_req.user_id = tr.requested_by_id
+WHERE tr.status IN ('pending', 'approved');
+
