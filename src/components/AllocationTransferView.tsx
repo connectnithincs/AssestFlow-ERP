@@ -61,7 +61,11 @@ export const AllocationTransferView: React.FC = () => {
   // Find asset and current holder details for conflict rule
   const selectedAsset = assets.find(a => a.tag === selectedAssetTag);
   const isAllocated = selectedAsset?.status === 'Allocated';
-  const currentHolderName = selectedAsset?.currentHolderName;
+  const currentHolderName = selectedAsset?.currentHolderName || 'Unknown';
+
+  const selectableAssets = activeRole === 'Admin'
+    ? assets.filter(a => a.status === 'Available')
+    : assets;
 
   const handleAllocateOrRequest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,14 +130,20 @@ export const AllocationTransferView: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* 2-Column Action Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 2-Column Action Section or Center single column for Admin */}
+      <div className={activeRole === 'Admin' ? "max-w-2xl mx-auto w-full" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
         
         {/* Column 1: Allocate & Transfer Form */}
         <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-xs">
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-gray-900">New Allocation or Transfer Request</h3>
-            <p className="text-xs text-gray-500">Allocate an available asset or request a transfer for an in-use asset.</p>
+            <h3 className="text-sm font-bold text-gray-900">
+              {activeRole === 'Admin' ? 'New Asset Allocation' : 'New Allocation or Transfer Request'}
+            </h3>
+            <p className="text-xs text-gray-500">
+              {activeRole === 'Admin' 
+                ? 'Allocate an available corporate asset to an employee.' 
+                : 'Allocate an available asset or request a transfer for an in-use asset.'}
+            </p>
           </div>
 
           <form onSubmit={handleAllocateOrRequest} className="space-y-4">
@@ -147,7 +157,7 @@ export const AllocationTransferView: React.FC = () => {
                 required
               >
                 <option value="">-- Select Asset --</option>
-                {assets.map(a => (
+                {selectableAssets.map(a => (
                   <option key={a.tag} value={a.tag}>
                     [{a.tag}] {a.name} ({a.status})
                   </option>
@@ -155,8 +165,8 @@ export const AllocationTransferView: React.FC = () => {
               </select>
             </div>
 
-            {/* Conflict Rule Warning Display */}
-            {isAllocated && (
+            {/* Conflict Rule Warning Display (Only for non-Admins) */}
+            {isAllocated && activeRole !== 'Admin' && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
                 <ShieldAlert className="w-5 h-5 text-[#F59E0B] shrink-0" />
                 <div>
@@ -171,7 +181,9 @@ export const AllocationTransferView: React.FC = () => {
 
             {/* Select Target User */}
             <div>
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Allocate / Transfer To *</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                {activeRole === 'Admin' ? 'Allocate To *' : 'Allocate / Transfer To *'}
+              </label>
               <select
                 value={selectedUserId}
                 onChange={e => setSelectedUserId(e.target.value)}
@@ -211,7 +223,7 @@ export const AllocationTransferView: React.FC = () => {
 
             {/* Allocate / Transfer button with dynamic text */}
             <div className="pt-2">
-              {isAllocated ? (
+              {isAllocated && activeRole !== 'Admin' ? (
                 <button
                   type="submit"
                   className="w-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
@@ -231,111 +243,113 @@ export const AllocationTransferView: React.FC = () => {
         </div>
 
         {/* Column 2: Pending Requests Approval Queue */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-gray-900">Pending Transfer Approvals</h3>
-              <p className="text-xs text-gray-500">Asset managers and admins can approve or decline transfers.</p>
-            </div>
+        {activeRole !== 'Admin' && (
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-gray-900">Pending Transfer Approvals</h3>
+                <p className="text-xs text-gray-500">Asset managers and admins can approve or decline transfers.</p>
+              </div>
 
-            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-              {requests.length === 0 ? (
-                <div className="text-center p-8 text-xs text-gray-400">
-                  No active transfer requests found.
-                </div>
-              ) : (
-                requests.map(req => (
-                  <div key={req.id} className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{req.assetTag}</span>
-                        <h4 className="text-xs font-bold text-gray-900 leading-tight mb-1">{req.assetName}</h4>
-                      </div>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                        req.status === 'Pending' 
-                          ? 'bg-amber-50 text-amber-600 border border-amber-100' 
-                          : req.status === 'Approved' 
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                            : req.status === 'Approved by HOD' as any
-                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                              : 'bg-rose-50 text-rose-600 border border-rose-100'
-                      }`}>
-                        {req.status === 'Approved by HOD' as any ? 'Forwarded to Manager' : req.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[11px] text-gray-600">
-                      <div>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase block leading-none mb-0.5">Current Holder</span>
-                        <span className="font-bold text-gray-800">{req.currentHolderName}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase block leading-none mb-0.5">Transfer Requested To</span>
-                        <span className="font-bold text-[#167C65]">{req.requestedByName}</span>
-                      </div>
-                    </div>
-
-                    <div className="text-[10px] text-gray-400 font-semibold uppercase leading-none">
-                      EXPECTED RETURN: {req.expectedReturnDate}
-                    </div>
-
-                    {/* HOD / Manager approval workflows */}
-                    {req.status === 'Pending' && activeRole === 'Department Head' && (
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          onClick={() => handleApproveRequest(req)}
-                          className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          Approve & Forward
-                        </button>
-                        <button
-                          onClick={() => handleRejectRequest(req.id)}
-                          className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                          Reject
-                        </button>
-                      </div>
-                    )}
-
-                    {req.status === 'Approved by HOD' as any && activeRole === 'Department Head' && (
-                      <div className="text-[10px] text-blue-600 font-bold bg-blue-50/50 p-2 rounded-lg border border-blue-100 text-center select-none">
-                        ✓ Approved & Forwarded to Asset Manager
-                      </div>
-                    )}
-
-                    {(req.status === 'Pending' || req.status === 'Approved by HOD' as any) && (activeRole === 'Asset Manager' || activeRole === 'Admin') && (
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          onClick={() => handleApproveRequest(req)}
-                          className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          {req.status === 'Approved by HOD' as any ? 'Allocate / Complete' : 'Approve & Allocate'}
-                        </button>
-                        <button
-                          onClick={() => handleRejectRequest(req.id)}
-                          className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                          Reject
-                        </button>
-                      </div>
-                    )}
+              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                {requests.length === 0 ? (
+                  <div className="text-center p-8 text-xs text-gray-400">
+                    No active transfer requests found.
                   </div>
-                ))
-              )}
+                ) : (
+                  requests.map(req => (
+                    <div key={req.id} className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{req.assetTag}</span>
+                          <h4 className="text-xs font-bold text-gray-900 leading-tight mb-1">{req.assetName}</h4>
+                        </div>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                          req.status === 'Pending' 
+                            ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                            : req.status === 'Approved' 
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                              : req.status === 'Approved by HOD' as any
+                                ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                                : 'bg-rose-50 text-rose-600 border border-rose-100'
+                        }`}>
+                          {req.status === 'Approved by HOD' as any ? 'Forwarded to Manager' : req.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-gray-600">
+                        <div>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase block leading-none mb-0.5">Current Holder</span>
+                          <span className="font-bold text-gray-800">{req.currentHolderName}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase block leading-none mb-0.5">Transfer Requested To</span>
+                          <span className="font-bold text-[#167C65]">{req.requestedByName}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-gray-400 font-semibold uppercase leading-none">
+                        EXPECTED RETURN: {req.expectedReturnDate}
+                      </div>
+
+                      {/* HOD / Manager approval workflows */}
+                      {req.status === 'Pending' && activeRole === 'Department Head' && (
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => handleApproveRequest(req)}
+                            className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Approve & Forward
+                          </button>
+                          <button
+                            onClick={() => handleRejectRequest(req.id)}
+                            className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {req.status === 'Approved by HOD' as any && activeRole === 'Department Head' && (
+                        <div className="text-[10px] text-blue-600 font-bold bg-blue-50/50 p-2 rounded-lg border border-blue-100 text-center select-none">
+                          ✓ Approved & Forwarded to Asset Manager
+                        </div>
+                      )}
+
+                      {(req.status === 'Pending' || req.status === 'Approved by HOD' as any) && activeRole === 'Asset Manager' && (
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => handleApproveRequest(req)}
+                            className="flex-1 flex items-center justify-center gap-1 bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            {req.status === 'Approved by HOD' as any ? 'Allocate / Complete' : 'Approve & Allocate'}
+                          </button>
+                          <button
+                            onClick={() => handleRejectRequest(req.id)}
+                            className="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
+            
+            {activeRole === 'Employee' && (
+              <p className="text-[10px] text-amber-600 font-semibold border-t border-gray-100 pt-3 mt-4 flex items-center gap-1.5">
+                <Inbox className="w-3.5 h-3.5 text-amber-500" />
+                Employee account detected: You do not have permissions to Approve or Reject requests.
+              </p>
+            )}
           </div>
-          
-          {activeRole === 'Employee' && (
-            <p className="text-[10px] text-amber-600 font-semibold border-t border-gray-100 pt-3 mt-4 flex items-center gap-1.5">
-              <Inbox className="w-3.5 h-3.5 text-amber-500" />
-              Employee account detected: You do not have permissions to Approve or Reject requests.
-            </p>
-          )}
-        </div>
+        )}
 
       </div>
 
