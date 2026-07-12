@@ -16,7 +16,7 @@ class RaiseMaintenanceRequest(BaseModel):
     estimated_cost: Optional[float] = 0.0
 
 class WorkflowStepRequest(BaseModel):
-    action: str -- 'approve', 'reject', 'assign_technician', 'start_work', 'resolve'
+    action: str # 'approve', 'reject', 'assign_technician', 'start_work', 'resolve'
     acting_user_id: str
     resolution_notes: Optional[str] = None
     actual_cost: Optional[float] = None

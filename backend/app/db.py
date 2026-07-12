@@ -19,10 +19,10 @@ async def connect_to_db():
             max_size=5,
             command_timeout=10
         )
-        print("✅ Connected to PostgreSQL Database Engine.")
+        print("[OK] Connected to PostgreSQL Database Engine.")
     except Exception as e:
-        print(f"⚠️ Could not connect to PostgreSQL ({DATABASE_URL}): {e}")
-        print("ℹ️ API Server starting in offline mode: Interactive Swagger Documentation (/docs) is fully accessible.")
+        print(f"[WARNING] Could not connect to PostgreSQL ({DATABASE_URL}): {e}")
+        print("[INFO] API Server starting in offline mode: Interactive Swagger Documentation (/docs) is fully accessible.")
 
 async def close_db_connection():
     global pool

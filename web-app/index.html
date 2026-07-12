@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AssetFlow Enterprise ERP | Asset & Resource Management</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- FontAwesome for high-fidelity UI icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       SCREEN 1: LOGIN & SIGNUP SCREEN (OVERLAY)
+       ========================================================================= -->
+  <div id="view-login">
+    <div class="login-card">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div class="brand-logo" style="justify-content: center; margin-bottom: 12px;">
+          <div class="brand-icon" style="width: 48px; height: 48px; font-size: 1.5rem;">⚡</div>
+          <span class="brand-title" style="font-size: 1.8rem;">AssetFlow</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.92rem;">State-Driven Enterprise Resource & Asset Management</p>
+      </div>
+
+      <div class="tabs-header" style="justify-content: center; margin-bottom: 20px;">
+        <button class="tab-btn active" onclick="switchLoginTab('login')">Sign In</button>
+        <button class="tab-btn" onclick="switchLoginTab('signup')">Create Employee Account</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form-box" class="tab-content active">
+        <form onsubmit="handleLogin(event)">
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Email Address</label>
+            <input type="email" id="login-email" value="admin@assetflow.local" required style="width: 100%;">
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Password</label>
+            <input type="password" id="login-pass" value="Admin@AssetFlow2026" required style="width: 100%;">
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+            <i class="fa-solid fa-right-to-bracket"></i> Authenticate & Enter Portal
+          </button>
+        </form>
+
+        <!-- Hackathon Demo Account Picker -->
+        <div class="demo-account-picker">
+          <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">Quick Demo Accounts (Role-Based Access):</p>
+          <button class="demo-account-btn" onclick="quickLogin('admin@assetflow.local', 'Admin')">
+            <span><i class="fa-solid fa-shield-halved" style="color: #6366f1;"></i> Admin Account</span>
+            <span class="user-role-badge">Organization Setup</span>
+          </button>
+          <button class="demo-account-btn" onclick="quickLogin('manager@assetflow.local', 'Asset Manager')">
+            <span><i class="fa-solid fa-boxes-stacked" style="color: #06b6d4;"></i> Asset Manager</span>
+            <span class="user-role-badge">Full Operations</span>
+          </button>
+          <button class="demo-account-btn" onclick="quickLogin('employee@assetflow.local', 'Employee')">
+            <span><i class="fa-solid fa-user" style="color: #10b981;"></i> Regular Employee</span>
+            <span class="user-role-badge">Book & Raise Request</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="signup-form-box" class="tab-content">
+        <form onsubmit="handleSignup(event)">
+          <div style="margin-bottom: 12px;">
+            <input type="text" id="signup-name" placeholder="Full Name" required style="width: 100%;">
+          </div>
+          <div style="margin-bottom: 12px;">
+            <input type="email" id="signup-email" placeholder="Email Address" required style="width: 100%;">
+          </div>
+          <div style="margin-bottom: 12px;">
+            <select id="signup-dept" style="width: 100%;">
+              <option value="IT-GLOBAL">IT Infrastructure (IT-GLOBAL)</option>
+              <option value="OPS-MEDIA">Production & Operations (OPS-MEDIA)</option>
+              <option value="CORP-HQ">Executive Boardroom (CORP-HQ)</option>
+            </select>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <input type="password" id="signup-pass" placeholder="Create Password" required style="width: 100%;">
+          </div>
+          <p style="font-size: 0.78rem; color: #f59e0b; margin-bottom: 16px;"><i class="fa-solid fa-circle-info"></i> Per Screen 1 rules: Signup creates an Employee account only. Admin must promote you in Screen 3.</p>
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);">
+            Create Employee Account
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MAIN APPLICATION WORKSPACE (HIDDEN UNTIL LOGGED IN)
+       ========================================================================= -->
+  <div id="app-workspace" class="app-container" style="display: none;">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <div class="brand-icon">⚡</div>
+          <span class="brand-title">AssetFlow</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-section-title">Core Operations</div>
+        <a href="#" class="nav-item active" onclick="switchScreen('dashboard')">
+          <i class="fa-solid fa-chart-pie"></i> Dashboard
+        </a>
+        <a href="#" class="nav-item" onclick="switchScreen('assets')">
+          <i class="fa-solid fa-laptop-code"></i> Asset Directory
+        </a>
+        <a href="#" class="nav-item" onclick="switchScreen('allocation')">
+          <i class="fa-solid fa-right-left"></i> Allocate & Transfer
+          <span class="nav-item-badge" id="badge-conflict">2</span>
+        </a>
+        <a href="#" class="nav-item" onclick="switchScreen('bookings')">
+          <i class="fa-solid fa-calendar-check"></i> Resource Bookings
+        </a>
+
+        <div class="nav-section-title">Maintenance & Verification</div>
+        <a href="#" class="nav-item" onclick="switchScreen('maintenance')">
+          <i class="fa-solid fa-wrench"></i> Maintenance Management
+        </a>
+        <a href="#" class="nav-item" onclick="switchScreen('audit')">
+          <i class="fa-solid fa-clipboard-check"></i> Audit Cycles
+        </a>
+
+        <div class="nav-section-title">Executive & Admin</div>
+        <a href="#" class="nav-item" id="nav-org-setup" onclick="switchScreen('org-setup')" style="display: none;">
+          <i class="fa-solid fa-sliders"></i> Organization Setup
+        </a>
+        <a href="#" class="nav-item" onclick="switchScreen('reports')">
+          <i class="fa-solid fa-chart-line"></i> Reports & Analytics
+        </a>
+        <a href="#" class="nav-item" onclick="switchScreen('activity')">
+          <i class="fa-solid fa-bell"></i> Logs & Notifications
+          <span class="nav-item-badge" id="badge-notif">3</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-widget">
+          <div class="user-avatar" id="current-user-avatar">AD</div>
+          <div class="user-info">
+            <div class="user-name" id="current-user-name">Sriram Admin</div>
+            <div class="user-role-badge" id="current-user-role">System Admin</div>
+          </div>
+          <button onclick="handleLogout()" title="Log Out" style="color: var(--text-muted);">
+            <i class="fa-solid fa-power-off"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <!-- Top Navbar -->
+      <header class="top-navbar">
+        <div class="top-search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" placeholder="Search Tag (AF-0001), serial number, or resource..." oninput="handleGlobalSearch(this.value)">
+        </div>
+
+        <div class="navbar-actions">
+          <button class="action-btn-icon" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+          </button>
+          <button class="action-btn-icon" onclick="switchScreen('activity')" title="Notifications">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notification-dot"></span>
+          </button>
+          <button class="btn-primary" onclick="switchScreen('assets')">
+            <i class="fa-solid fa-plus"></i> Register Asset
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEWPORT CONTAINER (CONTAINING ALL 10 SCREEN VIEWS) -->
+      <div class="viewport-container">
+        
+        <!-- ===================================================================
+             SCREEN 2: DASHBOARD / HOME SCREEN
+             =================================================================== -->
+        <section id="view-dashboard" class="screen-view active">
+          <div class="screen-header">
+            <div>
+              <h2>Operational Dashboard</h2>
+              <p>Real-time lifecycle snapshot across all departments, assets, and shared resources.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-secondary" onclick="switchScreen('bookings')"><i class="fa-solid fa-calendar"></i> Book Room</button>
+              <button class="btn-secondary" onclick="switchScreen('maintenance')"><i class="fa-solid fa-screwdriver-wrench"></i> Raise Repair</button>
+            </div>
+          </div>
+
+          <!-- KPI Cards Grid -->
+          <div class="kpi-grid" id="dashboard-kpi-container">
+            <!-- Populated via JS -->
+          </div>
+
+          <!-- Overdue Returns Section (Highlighted separately as per Screen 2) -->
+          <div class="glass-card" style="margin-bottom: 28px; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="color: #ef4444; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Overdue Asset Allocations (Immediate Action Required)
+              </h3>
+              <span class="badge badge-lost" id="overdue-count-badge">2 Overdue</span>
+            </div>
+            <div class="data-table-container" style="background: transparent;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Asset Tag</th>
+                    <th>Asset Name</th>
+                    <th>Current Assignee</th>
+                    <th>Expected Return</th>
+                    <th>Days Overdue</th>
+                    <th>Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overdue-table-body">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Activity & Quick Allocations -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+            <div class="glass-card">
+              <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-primary);"></i> Active Resource Bookings & Upcoming Returns</h3>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Resource / Asset</th><th>Holder</th><th>Schedule Window</th><th>Status</th></tr>
+                  </thead>
+                  <tbody id="dashboard-recent-table"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Quick Actions</h3>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-primary" style="justify-content: space-between;" onclick="openModal('modal-register')">
+                  <span><i class="fa-solid fa-plus"></i> Register New Asset</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button class="btn-secondary" style="justify-content: space-between;" onclick="switchScreen('allocation')">
+                  <span><i class="fa-solid fa-user-check"></i> Allocate Asset to Staff</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button class="btn-secondary" style="justify-content: space-between;" onclick="switchScreen('bookings')">
+                  <span><i class="fa-solid fa-building"></i> Book Boardroom / Van</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button class="btn-secondary" style="justify-content: space-between;" onclick="switchScreen('audit')">
+                  <span><i class="fa-solid fa-magnifying-glass-chart"></i> Start Audit Verification</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 3: ORGANIZATION SETUP SCREEN (ADMIN ONLY - 3 TABS)
+             =================================================================== -->
+        <section id="view-org-setup" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Organization Setup (Admin Master Data)</h2>
+              <p>Tab A: Departments | Tab B: Asset Categories | Tab C: Employee Role Promotion (Only place roles are assigned).</p>
+            </div>
+          </div>
+
+          <div class="tabs-header">
+            <button class="tab-btn active" onclick="switchSetupTab('tab-depts', this)"><i class="fa-solid fa-sitemap"></i> Tab A: Departments</button>
+            <button class="tab-btn" onclick="switchSetupTab('tab-cats', this)"><i class="fa-solid fa-layer-group"></i> Tab B: Asset Categories</button>
+            <button class="tab-btn" onclick="switchSetupTab('tab-users', this)"><i class="fa-solid fa-users-gear"></i> Tab C: Employee Directory & Roles</button>
+          </div>
+
+          <!-- TAB A: DEPARTMENTS -->
+          <div id="tab-depts" class="tab-content active">
+            <div class="glass-card" style="margin-bottom: 24px;">
+              <h3 style="margin-bottom: 14px;">Create / Edit Department</h3>
+              <form onsubmit="handleCreateDepartment(event)" style="display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 12px; align-items: end;">
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Dept Code</label>
+                  <input type="text" id="dept-code" placeholder="e.g., FIN-GLOBAL" required style="width: 100%;">
+                </div>
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Department Name</label>
+                  <input type="text" id="dept-name" placeholder="Finance & Strategy" required style="width: 100%;">
+                </div>
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Parent Department</label>
+                  <select id="dept-parent" style="width: 100%;">
+                    <option value="">-- None (Root) --</option>
+                    <option value="CORP-HQ">CORP-HQ</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-primary">Save Dept</button>
+              </form>
+            </div>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead><tr><th>Code</th><th>Department Name</th><th>Parent Hierarchy</th><th>Department Head</th><th>Status</th></tr></thead>
+                <tbody id="table-depts-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB B: ASSET CATEGORIES -->
+          <div id="tab-cats" class="tab-content">
+            <div class="glass-card" style="margin-bottom: 24px;">
+              <h3 style="margin-bottom: 14px;">Create / Edit Asset Category</h3>
+              <form onsubmit="handleCreateCategory(event)" style="display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 12px; align-items: end;">
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Category Name</label>
+                  <input type="text" id="cat-name" placeholder="e.g., Specialized Lab Equipment" required style="width: 100%;">
+                </div>
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Warranty (Months)</label>
+                  <input type="number" id="cat-warranty" value="24" style="width: 100%;">
+                </div>
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Custom Fields Schema</label>
+                  <input type="text" id="cat-custom" placeholder="e.g. Calibration Date, Laser Output" style="width: 100%;">
+                </div>
+                <button type="submit" class="btn-primary">Save Category</button>
+              </form>
+            </div>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead><tr><th>Category Name</th><th>Default Warranty</th><th>Custom Fields Defined</th><th>Assets Count</th><th>Status</th></tr></thead>
+                <tbody id="table-cats-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB C: EMPLOYEE DIRECTORY & ROLE PROMOTION -->
+          <div id="tab-users" class="tab-content">
+            <div class="glass-card" style="margin-bottom: 20px; background: rgba(99, 102, 241, 0.08); border-color: var(--accent-primary);">
+              <p style="font-size: 0.9rem;"><i class="fa-solid fa-shield-halved" style="color: var(--accent-primary);"></i> <strong>Strict RBAC Enforcement (Screen 3 Tab C):</strong> Signup creates an Employee account only. As an Admin, use the dropdown below to promote employees to <strong>Department Head</strong> or <strong>Asset Manager</strong>. This is the only place roles are assigned.</p>
+            </div>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead><tr><th>Employee Name</th><th>Email</th><th>Department</th><th>Current Role</th><th>Promote Action (RBAC)</th></tr></thead>
+                <tbody id="table-users-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 4: ASSET REGISTRATION & DIRECTORY SCREEN
+             =================================================================== -->
+        <section id="view-assets" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Master Asset Directory</h2>
+              <p>Search, filter, and track lifecycle status across every item (`AF-0001` sequence).</p>
+            </div>
+            <button class="btn-primary" onclick="openModal('modal-register')"><i class="fa-solid fa-plus"></i> Register New Asset</button>
+          </div>
+
+          <!-- Multi-Filter Bar -->
+          <div class="glass-card" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+            <div>
+              <label style="font-size: 0.78rem; color: var(--text-muted);">Category</label>
+              <select id="filter-category" onchange="applyAssetFilters()" style="width: 100%;">
+                <option value="">All Categories</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Vehicles">Vehicles</option>
+                <option value="Production Equipment">Production Equipment</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; color: var(--text-muted);">Lifecycle Status</label>
+              <select id="filter-status" onchange="applyAssetFilters()" style="width: 100%;">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="Allocated">Allocated</option>
+                <option value="Under Maintenance">Under Maintenance</option>
+                <option value="Reserved">Reserved</option>
+                <option value="Lost">Lost</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; color: var(--text-muted);">Department</label>
+              <select id="filter-dept" onchange="applyAssetFilters()" style="width: 100%;">
+                <option value="">All Departments</option>
+                <option value="IT-GLOBAL">IT-GLOBAL</option>
+                <option value="OPS-MEDIA">OPS-MEDIA</option>
+                <option value="CORP-HQ">CORP-HQ</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn-secondary" onclick="resetAssetFilters()" style="width: 100%; justify-content: center;"><i class="fa-solid fa-rotate"></i> Reset Filters</button>
+            </div>
+          </div>
+
+          <!-- Assets Table -->
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Asset Tag</th>
+                  <th>Name & Specification</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Current Holder</th>
+                  <th>Lifecycle Status</th>
+                  <th>Condition</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-assets-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 5: ASSET ALLOCATION, CONFLICT HANDLING & TRANSFER SCREEN
+             =================================================================== -->
+        <section id="view-allocation" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Asset Allocation & Transfer Control</h2>
+              <p>Allocate assets to staff with automatic conflict prevention and check-in/check-out condition tracking.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+            <!-- Allocation Form Box -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 18px;"><i class="fa-solid fa-user-tag" style="color: var(--accent-primary);"></i> Allocate Asset to Staff / Department</h3>
+              <form onsubmit="handleAllocateSubmit(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                  <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Select Target Asset</label>
+                  <select id="alloc-asset-select" required style="width: 100%;"></select>
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Allocate To Employee</label>
+                  <select id="alloc-user-select" required style="width: 100%;"></select>
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Expected Return Date (Optional)</label>
+                  <input type="date" id="alloc-return-date" style="width: 100%;">
+                </div>
+                <div style="background: rgba(99, 102, 241, 0.08); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-primary);">
+                  <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                    <strong>Conflict Rule Check:</strong> If you select an asset that is already held by another employee (e.g. Priya has AF-0114), the system will block the allocation and offer a <strong>Transfer Request</strong> option.
+                  </p>
+                </div>
+                <button type="submit" class="btn-primary" style="justify-content: center; padding: 12px;">
+                  <i class="fa-solid fa-check"></i> Execute Allocation
+                </button>
+              </form>
+            </div>
+
+            <!-- Return Check-In Box -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 18px;"><i class="fa-solid fa-rotate-left" style="color: #10b981;"></i> Asset Return Check-In Flow</h3>
+              <form onsubmit="handleReturnSubmit(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                  <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Select Currently Allocated Asset</label>
+                  <select id="return-asset-select" required style="width: 100%;"></select>
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Condition Check-In Verification</label>
+                  <select id="return-condition" required style="width: 100%;">
+                    <option value="Good">Good — No damage noted during return</option>
+                    <option value="New">New — Immaculate / As original</option>
+                    <option value="Fair">Fair — Normal wear and tear</option>
+                    <option value="Damaged">Damaged — Requires immediate maintenance check</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Return Check-In Notes</label>
+                  <textarea id="return-notes" rows="3" placeholder="Capture physical condition observations upon receipt..." style="width: 100%;"></textarea>
+                </div>
+                <button type="submit" class="btn-secondary" style="justify-content: center; padding: 12px; border-color: #10b981; color: #10b981;">
+                  <i class="fa-solid fa-clipboard-check"></i> Process Return & Revert to Available
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Pending Transfer Requests Ledger -->
+          <div class="glass-card" style="margin-top: 28px;">
+            <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-arrows-rotate" style="color: #06b6d4;"></i> Active Transfer Requests Ledger</h3>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead><tr><th>Asset Tag & Name</th><th>Current Holder</th><th>Requested By</th><th>Transfer Reason</th><th>Status</th><th>Approval Actions</th></tr></thead>
+                <tbody id="table-transfers-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 6: RESOURCE BOOKING & OVERLAP VALIDATION SCREEN
+             =================================================================== -->
+        <section id="view-bookings" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Resource Time-Slot Booking</h2>
+              <p>Schedule shared rooms, equipment, and vehicles with mathematical overlap prevention (`btree_gist`).</p>
+            </div>
+            <button class="btn-primary" onclick="openModal('modal-book-resource')"><i class="fa-solid fa-calendar-plus"></i> Book Shared Resource</button>
+          </div>
+
+          <!-- Visual Booking Grid / Calendar -->
+          <div class="glass-card" style="margin-bottom: 24px;">
+            <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-calendar-days"></i> Today's Resource Schedule Overview</h3>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Resource Name</th>
+                    <th>Category</th>
+                    <th>09:00 - 11:00</th>
+                    <th>11:00 - 13:00</th>
+                    <th>13:00 - 15:00</th>
+                    <th>15:00 - 17:00</th>
+                  </tr>
+                </thead>
+                <tbody id="booking-grid-body">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- All Bookings List -->
+          <div class="glass-card">
+            <h3 style="margin-bottom: 16px;">Active & Upcoming Bookings Ledger</h3>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead><tr><th>Booking ID</th><th>Shared Resource</th><th>Booked By</th><th>Start Time</th><th>End Time</th><th>Purpose</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="table-bookings-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 7: MAINTENANCE MANAGEMENT WORKFLOW SCREEN
+             =================================================================== -->
+        <section id="view-maintenance" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Maintenance & Repair Workflow</h2>
+              <p>Multi-stage approval pipeline (`Pending -> Approved -> Technician Assigned -> In Progress -> Resolved`).</p>
+            </div>
+            <button class="btn-primary" onclick="openModal('modal-raise-repair')"><i class="fa-solid fa-wrench"></i> Raise Repair Ticket</button>
+          </div>
+
+          <!-- Interactive Workflow Kanban Cards -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 28px;">
+            <div class="glass-card" style="padding: 16px; border-top: 4px solid #f59e0b;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px; color: #f59e0b;">1. PENDING APPROVAL</h4>
+              <div id="kanban-pending" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+            <div class="glass-card" style="padding: 16px; border-top: 4px solid #3b82f6;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px; color: #3b82f6;">2. APPROVED (ASSET LOCKED)</h4>
+              <div id="kanban-approved" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+            <div class="glass-card" style="padding: 16px; border-top: 4px solid #8b5cf6;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px; color: #8b5cf6;">3. IN PROGRESS / TECH ASSIGNED</h4>
+              <div id="kanban-progress" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+            <div class="glass-card" style="padding: 16px; border-top: 4px solid #10b981;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px; color: #10b981;">4. RESOLVED (REVERTED)</h4>
+              <div id="kanban-resolved" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 8: ASSET AUDIT & VERIFICATION CYCLE SCREEN
+             =================================================================== -->
+        <section id="view-audit" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Structured Verification Audit Cycles</h2>
+              <p>Multi-auditor checklists (`Verified / Missing / Damaged`) and discrepancy closing engine.</p>
+            </div>
+            <button class="btn-primary" onclick="openModal('modal-create-audit')"><i class="fa-solid fa-clipboard-list"></i> Create New Audit Cycle</button>
+          </div>
+
+          <!-- Active Audit Cycles & Checklist -->
+          <div id="audit-cycles-container"></div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 9: REPORTS & ANALYTICS SCREEN
+             =================================================================== -->
+        <section id="view-reports" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>Operational Analytics & Heatmaps</h2>
+              <p>Sub-15ms materialized view KPIs, asset utilization trends, and maintenance cost metrics.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <div class="glass-card">
+              <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-chart-column" style="color: var(--accent-primary);"></i> Asset Utilization Trends (Most-Used vs. Idle Assets)</h3>
+              <div id="utilization-chart-container" style="padding: 16px 0;"></div>
+            </div>
+            <div class="glass-card">
+              <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-chart-pie" style="color: #06b6d4;"></i> Category Valuation Distribution</h3>
+              <div id="category-chart-container" style="padding: 16px 0;"></div>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-calendar-week" style="color: #a855f7;"></i> Resource Booking Frequency Heatmap (Peak Usage Windows)</h3>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead><tr><th>Shared Resource</th><th>Mon (09-17)</th><th>Tue (09-17)</th><th>Wed (09-17)</th><th>Thu (09-17)</th><th>Fri (09-17)</th><th>Peak Frequency</th></tr></thead>
+                <tbody id="heatmap-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SCREEN 10: ACTIVITY LOGS & NOTIFICATIONS SCREEN
+             =================================================================== -->
+        <section id="view-activity" class="screen-view">
+          <div class="screen-header">
+            <div>
+              <h2>System Audit Trail & Notifications</h2>
+              <p>Full tracking of admin, manager, and employee actions (`who did what, when`).</p>
+            </div>
+            <button class="btn-secondary" onclick="markAllNotifsRead()"><i class="fa-solid fa-check-double"></i> Mark All Notifications Read</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+            <!-- Notifications List -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-bell" style="color: #ef4444;"></i> Your Alerts & Reminders</h3>
+              <div id="notifications-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 600px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- Full Activity Logs -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-list-check" style="color: #10b981;"></i> Global Activity Audit Log</h3>
+              <div class="data-table-container" style="max-height: 600px; overflow-y: auto;">
+                <table class="data-table">
+                  <thead><tr><th>Timestamp</th><th>User</th><th>Module</th><th>Action Description</th></tr></thead>
+                  <tbody id="table-logs-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       MODAL DIALOGS (REGISTER, BOOKING, REPAIR, CONFLICT PROMPT)
+       ========================================================================= -->
+
+  <!-- Register Asset Modal -->
+  <div id="modal-register" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Register New Asset (`AF-XXXX`)</h3>
+        <button class="modal-close" onclick="closeModal('modal-register')">&times;</button>
+      </div>
+      <form onsubmit="handleRegisterSubmit(event)" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div style="grid-column: span 2;">
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Asset Name / Description</label>
+          <input type="text" id="reg-name" placeholder="e.g. Sony FX6 Cinema Camera Kit" required style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Category</label>
+          <select id="reg-category" style="width: 100%;">
+            <option value="Electronics">Electronics</option>
+            <option value="Furniture">Furniture</option>
+            <option value="Vehicles">Vehicles</option>
+            <option value="Production Equipment">Production Equipment</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Serial Number</label>
+          <input type="text" id="reg-serial" placeholder="SN-882910-X" style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Condition</label>
+          <select id="reg-condition" style="width: 100%;">
+            <option value="New">New</option>
+            <option value="Good" selected>Good</option>
+            <option value="Fair">Fair</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Location</label>
+          <input type="text" id="reg-location" value="Main Warehouse" style="width: 100%;">
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Assigned Department</label>
+          <select id="reg-dept" style="width: 100%;">
+            <option value="IT-GLOBAL">IT Infrastructure (IT-GLOBAL)</option>
+            <option value="OPS-MEDIA">Production & Media (OPS-MEDIA)</option>
+            <option value="CORP-HQ">Executive Headquarters (CORP-HQ)</option>
+          </select>
+        </div>
+        <div style="grid-column: span 2; display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-register')">Cancel</button>
+          <button type="submit" class="btn-primary">Register Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Book Resource Modal -->
+  <div id="modal-book-resource" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Book Shared Resource (Overlap Check)</h3>
+        <button class="modal-close" onclick="closeModal('modal-book-resource')">&times;</button>
+      </div>
+      <form onsubmit="handleBookingSubmit(event)" style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Shared Room / Equipment</label>
+          <select id="book-resource-select" style="width: 100%;">
+            <option value="Boardroom A (4K Video Conferencing)">Boardroom A (4K Video Conferencing)</option>
+            <option value="Executive Suite B2">Executive Suite B2</option>
+            <option value="Utility Van Ford Transit (AF-V009)">Utility Van Ford Transit (AF-V009)</option>
+            <option value="4K Mobile Live Streaming Cart">4K Mobile Live Streaming Cart</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted);">Start Time</label>
+            <input type="datetime-local" id="book-start" required style="width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted);">End Time</label>
+            <input type="datetime-local" id="book-end" required style="width: 100%;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Booking Purpose</label>
+          <input type="text" id="book-purpose" placeholder="e.g. Q3 Investor Presentation Sync" required style="width: 100%;">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-book-resource')">Cancel</button>
+          <button type="submit" class="btn-primary">Confirm Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Raise Repair Modal -->
+  <div id="modal-raise-repair" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Raise Maintenance / Repair Request</h3>
+        <button class="modal-close" onclick="closeModal('modal-raise-repair')">&times;</button>
+      </div>
+      <form onsubmit="handleRaiseRepairSubmit(event)" style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Select Asset Needing Repair</label>
+          <select id="repair-asset-select" style="width: 100%;"></select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Priority Level</label>
+          <select id="repair-priority" style="width: 100%;">
+            <option value="high">High — Critical equipment breakdown</option>
+            <option value="medium" selected>Medium — Standard service check</option>
+            <option value="low">Low — Minor cosmetic issue</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Issue Title</label>
+          <input type="text" id="repair-title" placeholder="e.g. Battery overheating during 4K recording" required style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Detailed Description & Diagnosis</label>
+          <textarea id="repair-desc" rows="3" placeholder="Describe symptoms and steps required..." required style="width: 100%;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-raise-repair')">Cancel</button>
+          <button type="submit" class="btn-primary">Raise Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Conflict Alert Modal (Screen 5 Rule Check) -->
+  <div id="modal-conflict" class="modal-overlay">
+    <div class="modal-content" style="border-color: #ef4444; max-width: 520px;">
+      <div style="text-align: center; margin-bottom: 18px;">
+        <div style="width: 60px; height: 60px; border-radius: var(--radius-full); background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+          <i class="fa-solid fa-hand-pulse"></i>
+        </div>
+        <h3 style="color: #ef4444; font-size: 1.4rem;">Allocation Conflict Rule Triggered</h3>
+        <p id="conflict-msg" style="color: var(--text-secondary); margin-top: 8px; font-size: 0.95rem;"></p>
+      </div>
+      <div style="background: rgba(0, 0, 0, 0.25); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          <strong>ERP Rule:</strong> To maintain strict relational chain of custody, you cannot overwrite an existing asset holder. You must initiate a formal <strong>Transfer Request</strong> so both parties and the Asset Manager approve the handover.
+        </p>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn-secondary" style="flex: 1; justify-content: center;" onclick="closeModal('modal-conflict')">Cancel</button>
+        <button class="btn-primary" style="flex: 1; justify-content: center; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);" onclick="convertConflictToTransfer()">
+          <i class="fa-solid fa-arrows-turn-to-dots"></i> Request Transfer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

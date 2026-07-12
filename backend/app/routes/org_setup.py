@@ -77,7 +77,7 @@ async def create_asset_category(payload: AssetCategoryRequest, pool: asyncpg.Poo
 # TAB C: Employee Directory & Role Promotion
 # ============================================================================
 class PromoteEmployeeRequest(BaseModel):
-    target_role_name: str -- 'Department Head' or 'Asset Manager'
+    target_role_name: str # 'Department Head' or 'Asset Manager'
 
 @router.get("/employees", summary="Tab C: Employee Directory with current role, department, and status")
 async def list_employees(pool: asyncpg.Pool = Depends(get_db)):
