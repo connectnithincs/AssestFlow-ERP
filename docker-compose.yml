@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # ===========================================================================
-  # PostgreSQL Database Service (With Exclusion Constraint & State Engine Support)
+  # AssetFlow PostgreSQL Database Engine (Relational-Integrity-First Engine)
   # ===========================================================================
   postgres:
     image: postgres:16-alpine
@@ -16,12 +16,12 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      # Persistent named volume for production data retention across restarts
+      # Persistent named volume for data retention across restarts
       - assetflow-db-data:/var/lib/postgresql/data
       
       # Automatically execute DDL schemas and seed scripts on container initialization
       # Files in /docker-entrypoint-initdb.d are executed alphabetically:
-      # 001_initial_schema.sql -> 002_audit_module_schema.sql -> 003_analytics_reporting_schema.sql -> 004_seed_data.sql
+      # 001_initial_schema.sql -> 002_audit_module_schema.sql -> 003_analytics_reporting_schema.sql -> 004_spec_complete_schema.sql -> setup.sql
       - ./sql:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-assetflow} -d ${DB_NAME:-assetflow_db}"]
@@ -29,33 +29,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    networks:
-      - assetflow-net
-
-  # ===========================================================================
-  # AssetFlow Backend API Service (Modular State-Driven REST API)
-  # ===========================================================================
-  api:
-    image: ${API_IMAGE:-assetflow-backend:latest}
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: assetflow-api
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PORT: ${API_PORT:-8000}
-      DATABASE_URL: postgresql://${DB_USER:-assetflow}:${DB_PASSWORD:-SecretSecurePass2026!}@postgres:5432/${DB_NAME:-assetflow_db}
-      JWT_SECRET: ${JWT_SECRET:-SuperSecretAssetFlowJwtSigningKey2026!}
-      NODE_ENV: ${NODE_ENV:-development}
-      ENABLE_SWAGGER: "true"
-    ports:
-      - "${API_PORT:-8000}:8000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     networks:
       - assetflow-net
 
