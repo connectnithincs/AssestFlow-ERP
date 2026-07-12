@@ -19,6 +19,12 @@ export default function App() {
   const [activeOrgTab, setActiveOrgTab] = useState<string>('dept');
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
+  // Login flow state hooks
+  const [emailInput, setEmailInput] = useState('priya.nair@company.com');
+  const [passwordInput, setPasswordInput] = useState('••••••••');
+  const [loginRole, setLoginRole] = useState<UserRole>('admin');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
   // Filters for Asset Directory
   const [searchQuery, setSearchQuery] = useState('');
   const [catFilter, setCatFilter] = useState('ALL');
@@ -154,6 +160,23 @@ export default function App() {
     }
   };
 
+  const handleLogin = async () => {
+    let roleToUse = loginRole;
+    const email = emailInput.toLowerCase().trim();
+    if (email.includes('priya') || email.includes('admin')) {
+      roleToUse = 'admin';
+    } else if (email.includes('anita') || email.includes('manager')) {
+      roleToUse = 'manager';
+    } else if (email.includes('sam') || email.includes('head') || email.includes('hod')) {
+      roleToUse = 'head';
+    } else if (email.includes('jordan') || email.includes('employee')) {
+      roleToUse = 'employee';
+    }
+    
+    await simulateLogin(roleToUse);
+    setIsLoggedIn(true);
+  };
+
   return (
     <>
       {/* SVG Gradient Definitions */}
@@ -166,6 +189,64 @@ export default function App() {
           </linearGradient>
         </defs>
       </svg>
+
+      {!isLoggedIn ? (
+        <div id="login-screen">
+          <div className="login-card">
+            <div className="brand">
+              <div className="brand-mark"></div>
+              <span>AssetFlow</span>
+            </div>
+            <div className="field">
+              <label>Work email</label>
+              <input 
+                type="text" 
+                value={emailInput} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEmailInput(val);
+                  if (val.includes('priya') || val.includes('admin')) setLoginRole('admin');
+                  else if (val.includes('anita') || val.includes('manager')) setLoginRole('manager');
+                  else if (val.includes('sam') || val.includes('head')) setLoginRole('head');
+                  else if (val.includes('jordan') || val.includes('employee')) setLoginRole('employee');
+                }} 
+              />
+            </div>
+            <div className="field">
+              <label>Simulation Role Override</label>
+              <select 
+                value={loginRole} 
+                onChange={(e) => {
+                  const r = e.target.value as UserRole;
+                  setLoginRole(r);
+                  if (r === 'admin') setEmailInput('priya.nair@company.com');
+                  else if (r === 'manager') setEmailInput('anita.desai@company.com');
+                  else if (r === 'head') setEmailInput('sam.lee@company.com');
+                  else if (r === 'employee') setEmailInput('jordan.blake@company.com');
+                }}
+              >
+                <option value="admin">Admin (Priya Nair)</option>
+                <option value="manager">Asset Manager (Anita Desai)</option>
+                <option value="head">Department Head (Sam Lee)</option>
+                <option value="employee">Standard Employee (Jordan Blake)</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Password</label>
+              <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />
+            </div>
+            <button className="btn btn-primary btn-block" onClick={handleLogin}>Sign in</button>
+            <div className="link-row">
+              <a>Create an account</a>
+              <a>Forgot password?</a>
+            </div>
+            <div className="note-box">
+              Signup only creates a standard employee account. Roles are granted later by an admin from the employee directory.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
 
       {/* ================= INTERACTIVE MODALS ================= */}
       {activeModal === 'register' && (
@@ -760,6 +841,8 @@ export default function App() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </>
   );
 }
