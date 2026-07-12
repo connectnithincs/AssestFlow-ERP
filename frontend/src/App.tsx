@@ -318,7 +318,7 @@ export default function App() {
                   </div>
 
                   <div className="qr-note">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="#9a9da3" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" stroke="#9a9da3" stroke-width="2"/><rect x="3" y="14" width="7" height="7" stroke="#9a9da3" stroke-width="2"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="#9a9da3" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" stroke="#9a9da3" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" stroke="#9a9da3" strokeWidth="2"/></svg>
                     Last synced 12s ago
                   </div>
                 </div>
