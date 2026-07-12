@@ -1,4 +1,4 @@
-# ⚡ AssetFlow Enterprise ERP (Pure Database-Centric Backend Architecture)
+# ⚡ AssetFlow Enterprise ERP
 
 **State-Driven, Relational-Integrity-First Enterprise Resource & Asset Management**
 
@@ -12,6 +12,24 @@ In traditional enterprise asset management systems, business logic is scattered 
 * **Zero API Middleman Bottlenecks**: 100% of our 10-screen business logic (`conflict-proof asset allocation`, `mathematical time-slot overlap prevention`, `automated maintenance status locking`, `verification audit cycles`) is enforced natively inside our **PostgreSQL 16 Database Engine**.
 * **Relational Integrity First**: Using advanced PostgreSQL `btree_gist` exclusion constraints, date range algebra (`tstzrange`), and state transition triggers (`automate_maintenance_asset_status`), illegal states (such as double-allocating a laptop or double-booking a boardroom) are mathematically impossible at the database level.
 * **Sub-15ms Analytics**: Pre-aggregated Materialized Views (`mv_asset_status_summary`, `mv_daily_asset_durations`) guarantee instant KPI reporting even as historical audit tables grow into millions of rows.
+
+---
+
+## 🎨 React Frontend Dashboard (UI Implementation)
+
+The frontend is a premium React + TypeScript + Tailwind CSS web application configured with Vite. It simulates real-time integration with the database state engine and supports:
+* **Dark Navy Sidebar & Emerald Green Primary** branding.
+* **11 Core Screens** (Dashboard, Registry, Allocation/Transfer, Resource Booking weekly grid, Stepper-based Maintenance, Audit reconciliation, SVG reports, Alerts feed, Org setup).
+* **Role-Based Access Control** (RBAC dropdown in preview sidebar to switch between `Admin`, `Asset Manager`, `Department Head`, and `Employee`).
+
+To launch the web interface:
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run local development server
+npm run dev
+```
 
 ---
 
@@ -43,7 +61,7 @@ To run the entire database engine with all schemas and pre-seeded test accounts 
 # 1. Clone repo and checkout branch
 git clone https://github.com/connectnithincs/AssestFlow-ERP.git
 cd AssestFlow-ERP
-git checkout feature/backend-database-schema
+git checkout dev
 
 # 2. Launch PostgreSQL 16 Engine via Docker Compose
 docker-compose up -d
@@ -64,17 +82,28 @@ Your teammate can immediately test all roles using these pre-seeded users in `us
 
 ---
 
-## 📁 Repository Structure (`feature/backend-database-schema`)
+## 📁 Repository Structure
 
 ```text
 AssestFlow-ERP/
+├── public/                                # React UI assets
+├── src/                                   # React + TypeScript source files
+│   ├── assets/
+│   ├── components/                        # UI views (Dashboard, Audit, Registry, etc.)
+│   ├── context/                           # AppStateContext client state engine
+│   ├── App.tsx                            # Root router
+│   ├── index.css                          # Custom Tailwind styles
+│   ├── main.tsx
+│   └── types.ts                           # TS Interface typings
 ├── sql/
-│   ├── 001_initial_schema.sql           # Master DDL: Users, Departments, Assets, Allocations
+│   ├── 001_initial_schema.sql             # Master DDL: Users, Departments, Assets, Allocations
 │   ├── 002_audit_module_schema.sql        # Verification Audit Cycles & Discrepancy Reconciliation
 │   ├── 003_analytics_reporting_schema.sql # Sub-15ms Materialized Views & Utilization KPIs
 │   ├── 004_spec_complete_schema.sql       # Categories, btree_gist Overlap Constraints, State Triggers
 │   └── setup.sql                          # All-in-One Master Initialization & Seed Data Script
 ├── docker-compose.yml                     # Single-service PostgreSQL 16 container with volume persistence
-├── .gitignore                             # Clean exclusion rules
-└── README.md                              # This Hackathon Pitch & Direct SQL Reference
+├── tsconfig.json                          # TypeScript build configuration
+├── vite.config.ts                         # Vite configuration
+├── .gitignore                             # Combined exclusion rules
+└── README.md                              # This Integrated Hackathon Pitch & Reference
 ```
