@@ -32,6 +32,26 @@ services:
     networks:
       - assetflow-net
 
+  # ===========================================================================
+  # AssetFlow PostgREST API Gateway (Direct-to-Database HTTP REST API)
+  # ===========================================================================
+  postgrest:
+    image: postgrest/postgrest:v12.2.0
+    container_name: assetflow-postgrest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PGRST_DB_URI: "postgres://${DB_USER:-assetflow}:${DB_PASSWORD:-SecretSecurePass2026!}@postgres:5432/${DB_NAME:-assetflow_db}"
+      PGRST_DB_SCHEMAS: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: "really-long-secret-key-for-jwt-token-authentication-2026-must-be-at-least-32-chars-long"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - assetflow-net
+
 volumes:
   assetflow-db-data:
     driver: local
