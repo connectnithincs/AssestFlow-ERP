@@ -338,9 +338,19 @@ class DatabaseInspectorHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 conn.close()
                 self.send_json({"status": "error", "message": str(e)})
-                
-        else:
+        elif path == "/studio":
             self.send_html_dashboard()
+        else:
+            try:
+                web_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web", "index.html")
+                with open(web_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(content.encode("utf-8"))
+            except Exception as e:
+                self.send_html_dashboard()
 
     def send_json(self, data):
         self.send_response(200)
