@@ -9,6 +9,8 @@ venv/
 .idea/
 .vscode/
 *.log
+*.db
+*.sqlite
 
 # Logs
 logs

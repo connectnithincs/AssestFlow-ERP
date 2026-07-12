@@ -50,6 +50,19 @@ Because **AssetFlow** is built directly inside PostgreSQL (`/sql`), your front-e
 | **8. Audit Verification** | `UPDATE audit_cycles SET status = 'Closed' WHERE cycle_id = $1;` | Stored CTE reconciliation auto-converts missing verification records into `Lost` asset states. |
 | **9. Reports & Heatmaps**| `SELECT * FROM mv_daily_asset_durations;` | Sub-15ms calculations for Most-Used vs. Idle asset utilization ratios and room peak heatmaps. |
 | **10. Audit Logs & Alerts**| `SELECT * FROM activity_logs ORDER BY created_at DESC;` | Full immutable audit trail (`who did what, when`). |
+| **11. Raised Tickets Queue**| `SELECT * FROM v_raised_tickets_queue;` | **Helpdesk & Transfer Observation**: Sub-15ms unified real-time view combining all active `maintenance_requests` and `transfer_requests`. |
+
+---
+
+## ⚡ Frontend Architecture: TanStack Query + Pure Database Engine
+
+Because **AssetFlow** enforces 100% of its data integrity and state transitions natively inside PostgreSQL, our frontend application (`React / Next.js / Vue`) connects directly to the database via **Supabase / PostgREST** using **TanStack Query (v5)** (`sdk/tanstack-query-hooks.ts`). This eliminates backend API boilerplate and provides superpowers right out of the box:
+
+* **⚡ Optimistic UI + Native DB Rollback**: When a user books a room (`Screen 6`), `useBookResource()` updates the UI immediately. If PostgreSQL’s `btree_gist` exclusion constraint catches an overlapping time slot (`&&`), TanStack Query automatically rolls back the UI and shows the exact database error!
+* **⏱️ Sub-15ms Dashboard Polling**: Because our Materialized Views (`mv_asset_status_summary`) execute in `<15ms`, `useDashboardKPIs()` polls live stats every 5 seconds without stressing the database engine.
+* **🎟️ Live Raised Tickets Queue Polling**: `useRaisedTicketsQueue()` queries `v_raised_tickets_queue` directly every 5s, providing unified helpdesk observation across maintenance repairs and asset transfers in a single call.
+* **📱 Single-Call Barcode Quick-Scans**: `useQuickScanAsset()` calls our atomic procedure (`fn_quick_scan_asset()`), combining check-out vs. check-in status checks, allocation insertion, and activity logging into **1 single network request**.
+* **🔐 Zero-Trust Row-Level Security (RLS)**: PostgreSQL native RLS policies guarantee employees can only query or book assets within their authorized scope directly from the client.
 
 ---
 
@@ -100,8 +113,13 @@ AssestFlow-ERP/
 │   ├── 002_audit_module_schema.sql        # Verification Audit Cycles & Discrepancy Reconciliation
 │   ├── 003_analytics_reporting_schema.sql # Sub-15ms Materialized Views & Utilization KPIs
 │   ├── 004_spec_complete_schema.sql       # Categories, btree_gist Overlap Constraints, State Triggers
+│   ├── 005_enterprise_production_data.sql # Pre-seeded production enterprise data (40+ assets, 20 users)
+│   ├── 006_atomic_procedures_and_rls.sql  # Barcode Quick-Scan procedure, Depreciation Engine, RLS
 │   └── setup.sql                          # All-in-One Master Initialization & Seed Data Script
+├── sdk/
+│   └── tanstack-query-hooks.ts            # Type-Safe TanStack Query (v5) Frontend Integration Hooks
 ├── docker-compose.yml                     # Single-service PostgreSQL 16 container with volume persistence
+├── sql_inspector.py                       # Zero-API embedded SQLite Studio (`http://localhost:8080`)
 ├── tsconfig.json                          # TypeScript build configuration
 ├── vite.config.ts                         # Vite configuration
 ├── .gitignore                             # Combined exclusion rules
