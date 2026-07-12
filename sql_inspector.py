@@ -181,92 +181,15 @@ def setup_local_database():
     """)
 
     # =========================================================================
-    # Pre-Seed Realistic Sample Data (Exact Hackathon 10-Screen Demo Data)
+    # Pre-Seed Realistic Enterprise Production Data (40+ Assets, 20 Users)
     # =========================================================================
-    
-    # Departments
-    cursor.executemany("INSERT INTO departments VALUES (?, ?, ?, ?, ?);", [
-        ("CORP-HQ", "Executive Headquarters", None, "Sriram Admin", "Active"),
-        ("IT-GLOBAL", "Global IT & Cloud Infrastructure", "CORP-HQ", "Priya Sharma", "Active"),
-        ("OPS-MEDIA", "Media Production & Broadcasting", "CORP-HQ", "Rajesh Kumar", "Active"),
-        ("FIN-AUDIT", "Internal Audit & Compliance", "CORP-HQ", "Sriram Admin", "Active")
-    ])
-    
-    # Users
-    cursor.executemany("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, datetime('now'));", [
-        ("usr-1", "Sriram Admin", "admin@assetflow.local", "Admin", "CORP-HQ", "Active"),
-        ("usr-2", "Priya Sharma", "manager@assetflow.local", "Asset Manager", "IT-GLOBAL", "Active"),
-        ("usr-3", "Rajesh Kumar", "rajesh@assetflow.local", "Department Head", "OPS-MEDIA", "Active"),
-        ("usr-4", "Ananya Iyer", "employee@assetflow.local", "Employee", "IT-GLOBAL", "Active"),
-        ("usr-5", "Vikram Mehta", "vikram@assetflow.local", "Employee", "OPS-MEDIA", "Active")
-    ])
-    
-    # Asset Categories
-    cursor.executemany("INSERT INTO asset_categories VALUES (?, ?, ?, ?, ?);", [
-        ("cat-1", "Electronics", 36, "CPU, RAM, MAC Address, SSD Storage", "Active"),
-        ("cat-2", "Production Equipment", 24, "Sensor Size, Lens Mount, Firmware Version", "Active"),
-        ("cat-3", "Furniture", 60, "Material, Ergonomic Rating, Load Capacity", "Active"),
-        ("cat-4", "Vehicles", 36, "License Plate, Mileage, Fuel Type, Insurance Expiry", "Active")
-    ])
-    
-    # Assets
-    cursor.executemany("INSERT INTO assets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));", [
-        ("ast-1", "AF-0001", "MacBook Pro M3 Max (64GB RAM)", "cat-1", "New", "Server Room A", "IT-GLOBAL", "Allocated", "SN-998822-M3"),
-        ("ast-2", "AF-0002", "Sony FX6 Full-Frame Cinema Camera Kit", "cat-2", "Good", "Media Studio 1", "OPS-MEDIA", "Available", "SN-882910-FX"),
-        ("ast-3", "AF-0114", "Dell XPS 15 OLED Laptop (i9/32GB)", "cat-1", "Good", "Priya Desk 4B", "IT-GLOBAL", "Allocated", "SN-331122-DELL"),
-        ("ast-4", "AF-0019", "Herman Miller Aeron Ergonomic Task Chair", "cat-3", "Good", "Executive Suite 302", "CORP-HQ", "Allocated", "SN-HM-AERON"),
-        ("ast-5", "AF-0088", "ARRI SkyPanel S60-C LED Softlight", "cat-2", "Fair", "Service Bay 2", "OPS-MEDIA", "Under Maintenance", "SN-ARRI-88"),
-        ("ast-6", "AF-V009", "Ford Transit Custom Utility Van (4WD)", "cat-4", "Good", "Underground Garage Bay 4", "OPS-MEDIA", "Available", "SN-VAN-FORD-09"),
-        ("ast-7", "AF-0044", "iPad Pro 12.9\" M2 w/ Apple Pencil", "cat-1", "Poor", "IT Depot Locker 8", "IT-GLOBAL", "Allocated", "SN-IPAD-PRO-44"),
-        ("ast-8", "AF-0092", "Sennheiser MKH 416 Shotgun Mic Kit", "cat-2", "Damaged", "Audit Flagged Area", "OPS-MEDIA", "Lost", "SN-MIC-92")
-    ])
-    
-    # Allocations
-    cursor.executemany("INSERT INTO asset_allocations VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", [
-        ("alloc-1", "ast-1", "usr-2", "Sriram Admin", "2026-06-15", "2026-07-20", None, None, "Assigned for infrastructure deployment"),
-        ("alloc-2", "ast-3", "usr-2", "Priya Sharma", "2026-06-01", "2026-08-01", None, None, "Primary workstation laptop"),
-        ("alloc-3", "ast-4", "usr-1", "Sriram Admin", "2026-01-10", "2026-12-31", None, None, "Office seating"),
-        ("alloc-4", "ast-7", "usr-4", "Priya Sharma", "2026-06-01", "2026-07-08", None, None, "Field tablet (OVERDUE RETURN)")
-    ])
-    
-    # Bookings
-    cursor.executemany("INSERT INTO resource_bookings VALUES (?, ?, ?, ?, ?, ?, ?);", [
-        ("bk-1", "Boardroom A (4K Video Conferencing)", "usr-2", "2026-07-12 09:00:00", "2026-07-12 11:00:00", "Executive Strategy Roadmap Sync", "confirmed"),
-        ("bk-2", "Utility Van Ford Transit (AF-V009)", "usr-3", "2026-07-12 13:00:00", "2026-07-12 17:00:00", "On-Location Broadcast Shoot at Stadium", "confirmed"),
-        ("bk-3", "Executive Suite B2", "usr-1", "2026-07-12 14:00:00", "2026-07-12 16:00:00", "Annual IT Budget Audit Meeting", "confirmed")
-    ])
-    
-    # Maintenance
-    cursor.executemany("INSERT INTO maintenance_requests VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [
-        ("mnt-1", "ast-5", "Rajesh Kumar", "high", "Power supply flickering above 80% output", "Driver ballast overheats during continuous studio recording.", "in_progress", 350.00, None, "2026-07-10"),
-        ("mnt-2", "ast-7", "Ananya Iyer", "medium", "Screen digitizer unresponsive near edges", "Touch input drops out when using stylus in landscape mode.", "pending", 180.00, None, "2026-07-11")
-    ])
-    
-    # Audit Cycles & Records
-    cursor.execute("INSERT INTO audit_cycles VALUES (?, ?, ?, ?, ?, ?);", 
-                   ("aud-101", "Q3 Global IT & Studio Verification Audit", "All Departments", "2026-07-01", "2026-07-15", "In-Progress"))
-    
-    cursor.executemany("INSERT INTO audit_records VALUES (?, ?, ?, ?, ?, ?);", [
-        ("rec-1", "aud-101", "ast-1", "Allocated", "Verified", "Checked with Priya Sharma at desk."),
-        ("rec-2", "aud-101", "ast-2", "Available", "Verified", "Serial SN-882910 verified in Studio 1."),
-        ("rec-3", "aud-101", "ast-3", "Allocated", "Verified", "All good."),
-        ("rec-4", "aud-101", "ast-8", "Available", "Missing", "Not found in sound locker 3. Flagged.")
-    ])
-    
-    # Logs
-    cursor.executemany("INSERT INTO activity_logs VALUES (?, datetime('now'), ?, ?, ?, ?);", [
-        ("log-1", "Sriram Admin", "ASSETS", "Allocated AF-0019 Herman Miller Chair to Sriram Admin", "127.0.0.1"),
-        ("log-2", "Priya Sharma", "BOOKINGS", "Created confirmed booking for Boardroom A (09:00 - 11:00)", "127.0.0.1"),
-        ("log-3", "Vikram Mehta", "ASSETS", "Completed Check-In return for Ford Transit Van AF-V009 (Condition: Good)", "127.0.0.1"),
-        ("log-4", "Rajesh Kumar", "MAINTENANCE", "Raised High-Priority repair ticket for ARRI SkyPanel AF-0088", "127.0.0.1")
-    ])
-    
-    # Notifications
-    cursor.executemany("INSERT INTO notifications VALUES (?, ?, ?, ?, datetime('now'));", [
-        ("notif-1", "🚨 Overdue Return Alert", "Ananya Iyer is overdue returning iPad Pro AF-0044 (Due: 2026-07-08).", 0),
-        ("notif-2", "🔧 Maintenance Approved", "MacBook Pro AF-0001 repair request has been approved and moved to Under Maintenance.", 0),
-        ("notif-3", "📅 Booking Reminder", "Your booking for Boardroom A starts today at 09:00 AM.", 0)
-    ])
+    seed_file = os.path.join("sql", "005_enterprise_production_data.sql")
+    if os.path.exists(seed_file):
+        with open(seed_file, "r", encoding="utf-8") as f:
+            cursor.executescript(f.read())
+        print(f"[OK] Executed enterprise production seed from '{seed_file}'.")
+    else:
+        print(f"[WARN] Seed file '{seed_file}' not found.")
 
     conn.commit()
     conn.close()
