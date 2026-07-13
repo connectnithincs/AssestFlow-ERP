@@ -2,57 +2,95 @@ import React, { useEffect } from 'react';
 import { useAppState } from '../context/AppStateContext';
 import { X, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
-export const ToastContainer: React.FC = () => {
-  const { toasts, removeToast } = useAppState();
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full">
-      {toasts.map(toast => (
-        <ToastItem key={toast.id} toast={toast} onClose={removeToast} />
-      ))}
-    </div>
-  );
+const toastStyles: Record<string, { bg: string; border: string; icon: React.ReactNode; bar: string }> = {
+  success: {
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />,
+    bar: '#16a34a',
+  },
+  warning: {
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />,
+    bar: '#d97706',
+  },
+  danger: {
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />,
+    bar: '#dc2626',
+  },
+  info: {
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+    icon: <Info className="w-5 h-5 text-blue-500 shrink-0" />,
+    bar: '#2563eb',
+  },
 };
 
 const ToastItem: React.FC<{ toast: any; onClose: (id: string) => void }> = ({ toast, onClose }) => {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose(toast.id);
-    }, 5000); // Auto close after 5s
+    const timer = setTimeout(() => onClose(toast.id), 5000);
     return () => clearTimeout(timer);
   }, [toast.id, onClose]);
 
-  const icons = {
-    success: <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />,
-    warning: <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />,
-    danger: <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />,
-    info: <Info className="w-5 h-5 text-blue-500 shrink-0" />
-  };
-
-  const borders = {
-    success: 'border-l-4 border-l-[#167C65]',
-    warning: 'border-l-4 border-l-[#F59E0B]',
-    danger: 'border-l-4 border-l-[#DC2626]',
-    info: 'border-l-4 border-l-[#2563EB]'
-  };
+  const style = toastStyles[toast.type] || toastStyles.info;
 
   return (
-    <div 
-      className={`bg-white shadow-lg rounded-xl border border-gray-150 p-4 flex items-start justify-between gap-3 animate-slide-in ${borders[toast.type as 'success'|'warning'|'danger'|'info'] || ''}`}
+    <div
+      className="animate-slide-in"
+      style={{
+        background: style.bg,
+        border: `1px solid ${style.border}`,
+        borderRadius: '14px',
+        padding: '12px 14px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '10px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
     >
-      <div className="flex gap-3">
-        {icons[toast.type as 'success'|'warning'|'danger'|'info'] || <Info className="w-5 h-5 text-gray-500" />}
-        <div>
-          <h4 className="font-semibold text-gray-900 text-sm leading-none mb-1">{toast.title}</h4>
-          <p className="text-gray-600 text-xs leading-normal">{toast.message}</p>
+      {/* Left accent bar */}
+      <div style={{
+        position: 'absolute',
+        left: 0, top: 0, bottom: 0,
+        width: '3px',
+        background: style.bar,
+        borderRadius: '14px 0 0 14px',
+      }} />
+
+      <div className="flex gap-3 flex-1 min-w-0 pl-1">
+        {style.icon}
+        <div className="min-w-0">
+          <h4 className="font-bold text-gray-900 text-sm leading-tight">{toast.title}</h4>
+          <p className="text-gray-600 text-xs leading-relaxed mt-0.5">{toast.message}</p>
         </div>
       </div>
-      <button 
+
+      <button
         onClick={() => onClose(toast.id)}
-        className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 rounded-lg hover:bg-gray-100 shrink-0"
+        className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 rounded-lg shrink-0"
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.06)'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
       >
         <X className="w-4 h-4" />
       </button>
+    </div>
+  );
+};
+
+export const ToastContainer: React.FC = () => {
+  const { toasts, removeToast } = useAppState();
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+      {toasts.map(toast => (
+        <div key={toast.id} className="pointer-events-auto">
+          <ToastItem toast={toast} onClose={removeToast} />
+        </div>
+      ))}
     </div>
   );
 };

@@ -1,208 +1,176 @@
 import React, { useState } from 'react';
 import { useAppState } from '../context/AppStateContext';
-import { Asset, AssetStatus } from '../types';
-import { Search, Eye, X, ClipboardCheck, Wrench, ShieldAlert } from 'lucide-react';
+import { Asset } from '../types';
+import { Search, Eye, X, ClipboardCheck, Wrench, Package, Filter } from 'lucide-react';
+import { AssetStatus } from '../types';
 
 export const AssetRegistryView: React.FC = () => {
-  const { 
-    assets, 
-    categories, 
-    activeRole, 
-    currentUser, 
-    allocateAsset, 
-    addToast,
-    users
-  } = useAppState();
+  const { assets, categories } = useAppState();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [locationFilter, setLocationFilter] = useState<string>('All');
-
-  // Detail Modal State
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
-  // Extract unique locations for the filter
   const locations = Array.from(new Set(assets.map(a => a.location)));
 
-  // Filter logic
   const filteredAssets = assets.filter(asset => {
-    const matchesSearch = asset.name.toLowerCase().includes(search.toLowerCase()) || 
-                          asset.tag.toLowerCase().includes(search.toLowerCase()) ||
-                          asset.serialNumber.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      asset.name.toLowerCase().includes(search.toLowerCase()) ||
+      asset.tag.toLowerCase().includes(search.toLowerCase()) ||
+      asset.serialNumber.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'All' || asset.status === statusFilter;
     const matchesCategory = categoryFilter === 'All' || asset.category === categoryFilter;
     const matchesLocation = locationFilter === 'All' || asset.location === locationFilter;
-    
     return matchesSearch && matchesStatus && matchesCategory && matchesLocation;
   });
 
   const getStatusBadge = (status: AssetStatus) => {
-    const styles = {
-      'Available': 'bg-emerald-50 text-emerald-600 border border-emerald-100',
-      'Allocated': 'bg-blue-50 text-blue-600 border border-blue-100',
-      'Reserved': 'bg-indigo-50 text-indigo-600 border border-indigo-100',
-      'Under Maintenance': 'bg-amber-50 text-amber-600 border border-amber-100',
-      'Lost': 'bg-rose-50 text-rose-600 border border-rose-100',
-      'Retired': 'bg-gray-100 text-gray-600 border border-gray-200',
-      'Disposed': 'bg-red-50 text-red-600 border border-red-150'
+    const cls: Record<AssetStatus, string> = {
+      'Available':        'badge badge-available',
+      'Allocated':        'badge badge-allocated',
+      'Reserved':         'badge badge-reserved',
+      'Under Maintenance':'badge badge-maintenance',
+      'Lost':             'badge badge-lost',
+      'Retired':          'badge badge-retired',
+      'Disposed':         'badge badge-disposed',
     };
-    return (
-      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${styles[status]}`}>
-        {status}
-      </span>
-    );
+    return <span className={cls[status]}>{status}</span>;
+  };
+
+  const getConditionBadge = (condition: string) => {
+    const cls: Record<string, string> = {
+      Excellent: 'badge badge-success-pill',
+      Good:      'badge badge-brand-pill',
+      Fair:      'badge badge-warning-pill',
+      Poor:      'badge badge-danger-pill',
+      Broken:    'badge badge-danger-pill',
+    };
+    return <span className={cls[condition] || 'badge badge-neutral-pill'}>{condition}</span>;
+  };
+
+  // Status summary counts
+  const statusCounts = {
+    Available:         assets.filter(a => a.status === 'Available').length,
+    Allocated:         assets.filter(a => a.status === 'Allocated').length,
+    'Under Maintenance': assets.filter(a => a.status === 'Under Maintenance').length,
+    Lost:              assets.filter(a => a.status === 'Lost').length,
   };
 
   return (
-    <div className="space-y-6">
-      
-      {/* Filtering and Search Bar Card */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search bar */}
-          <div className="relative md:col-span-1">
+    <div className="space-y-5">
+      {/* Status summary pills */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up">
+        {[
+          { label: 'Available', count: statusCounts.Available, color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+          { label: 'Allocated', count: statusCounts.Allocated, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+          { label: 'Maintenance', count: statusCounts['Under Maintenance'], color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+          { label: 'Lost', count: statusCounts.Lost, color: '#e11d48', bg: '#fff1f2', border: '#fecdd3' },
+        ].map((s, i) => (
+          <button
+            key={s.label}
+            onClick={() => setStatusFilter(statusFilter === s.label ? 'All' : s.label as any)}
+            className={`p-4 rounded-2xl text-left transition-all cursor-pointer border animate-slide-up stagger-${i + 1} ${statusFilter === s.label ? 'shadow-md scale-[1.02]' : 'hover:scale-[1.01]'}`}
+            style={{ background: s.bg, borderColor: statusFilter === s.label ? s.color : s.border }}
+          >
+            <div className="text-2xl font-bold leading-none mb-1"
+              style={{ fontFamily: 'Space Grotesk, sans-serif', color: s.color }}>
+              {s.count}
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: s.color }}>{s.label}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Search & Filters */}
+      <div className="card-premium p-4 animate-slide-up stagger-2">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search Tag, Name, Serial..."
+              placeholder="Search tag, name, serial..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:border-[#167C65] transition-colors"
+              className="input-field pl-9"
             />
-            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
-
-          {/* Status filter */}
-          <div>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-[#167C65] transition-colors cursor-pointer"
-            >
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input-field w-auto">
               <option value="All">All Statuses</option>
-              <option value="Available">Available</option>
-              <option value="Allocated">Allocated</option>
-              <option value="Reserved">Reserved</option>
-              <option value="Under Maintenance">Under Maintenance</option>
-              <option value="Lost">Lost</option>
-              <option value="Retired">Retired</option>
-              <option value="Disposed">Disposed</option>
+              <option>Available</option><option>Allocated</option><option>Reserved</option>
+              <option>Under Maintenance</option><option>Lost</option><option>Retired</option><option>Disposed</option>
             </select>
-          </div>
-
-          {/* Category filter */}
-          <div>
-            <select
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-[#167C65] transition-colors cursor-pointer"
-            >
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="input-field w-auto">
               <option value="All">All Categories</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.name}>{c.name}</option>
-              ))}
+              {categories.map(c => <option key={c.id}>{c.name}</option>)}
             </select>
-          </div>
-
-          {/* Location filter */}
-          <div>
-            <select
-              value={locationFilter}
-              onChange={e => setLocationFilter(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-[#167C65] transition-colors cursor-pointer"
-            >
+            <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="input-field w-auto">
               <option value="All">All Locations</option>
-              {locations.map(loc => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
+              {locations.map(l => <option key={l}>{l}</option>)}
             </select>
+            {(statusFilter !== 'All' || categoryFilter !== 'All' || locationFilter !== 'All' || search) && (
+              <button onClick={() => { setSearch(''); setStatusFilter('All'); setCategoryFilter('All'); setLocationFilter('All'); }}
+                className="btn-secondary text-xs">
+                Clear
+              </button>
+            )}
           </div>
+        </div>
+        <div className="mt-2 text-[11px] text-gray-400 font-medium">
+          Showing <span className="font-bold text-gray-700">{filteredAssets.length}</span> of {assets.length} assets
         </div>
       </div>
 
-      {/* Assets Table */}
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden">
+      {/* Table */}
+      <div className="card-premium overflow-hidden animate-slide-up stagger-3">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="data-table">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Asset Tag</th>
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Asset Name</th>
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Location</th>
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Condition</th>
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+              <tr>
+                <th>Asset Tag</th>
+                <th>Name & Serial</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Condition</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-150">
+            <tbody>
               {filteredAssets.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-xs text-gray-400">
-                    No assets matched your search or filters.
+                  <td colSpan={7} className="py-12 text-center">
+                    <Package className="w-8 h-8 mx-auto mb-2 text-gray-200" />
+                    <p className="text-xs text-gray-400 font-medium">No assets matched your filters.</p>
                   </td>
                 </tr>
               ) : (
-                filteredAssets.map(asset => (
-                  <tr key={asset.tag} className="hover:bg-gray-50/50">
-                    <td className="p-4 text-xs font-bold text-[#167C65]">{asset.tag}</td>
-                    <td className="p-4">
-                      <div>
-                        <span className="text-xs font-bold text-gray-900 block">{asset.name}</span>
-                        <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">S/N: {asset.serialNumber}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-xs text-gray-700">{asset.category}</td>
-                    <td className="p-4 text-xs text-gray-500">{asset.location}</td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        asset.condition === 'Excellent' || asset.condition === 'Good'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : asset.condition === 'Fair'
-                            ? 'bg-amber-50 text-amber-700'
-                            : 'bg-rose-50 text-rose-700'
-                      }`}>
-                        {asset.condition}
+                filteredAssets.map((asset, i) => (
+                  <tr key={asset.tag} className={`animate-slide-up stagger-${Math.min(i + 1, 6)}`}>
+                    <td>
+                      <span className="text-xs font-bold px-2 py-1 rounded-lg"
+                        style={{ background: '#ecfdf8', color: '#167C65', fontFamily: 'monospace' }}>
+                        {asset.tag}
                       </span>
                     </td>
-                    <td className="p-4">{getStatusBadge(asset.status)}</td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-1.5">
-                        {activeRole === 'Employee' && asset.status === 'Available' && (
-                          <button
-                            onClick={() => {
-                              allocateAsset(asset.tag, currentUser?.id || '', 'Requested allocation via registry');
-                            }}
-                            className="bg-[#167C65] hover:bg-[#126351] text-white text-[10px] font-bold py-1 px-2 rounded-lg transition-colors cursor-pointer"
-                          >
-                            Request Allocation
-                          </button>
-                        )}
-                        {activeRole === 'Employee' && asset.status === 'Allocated' && asset.currentHolderId !== currentUser?.id && (
-                          <button
-                            onClick={() => {
-                              const partner = prompt("Enter Colleague email to transfer to:");
-                              if (!partner) return;
-                              const target = users.find(u => u.email.toLowerCase() === partner.toLowerCase());
-                              if (target) {
-                                addToast('Transfer Requested', `Request to transfer ${asset.name} to ${target.name} was forwarded to HOD.`, 'success');
-                              } else {
-                                alert("Colleague email not found.");
-                              }
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1 px-2 rounded-lg transition-colors cursor-pointer"
-                          >
-                            Request Transfer
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setSelectedAsset(asset)}
-                          className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold py-1 px-2.5 rounded-lg transition-colors inline-flex cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          View
-                        </button>
-                      </div>
+                    <td>
+                      <div className="font-bold text-gray-900 text-xs">{asset.name}</div>
+                      <div className="text-[10px] text-gray-400 font-mono mt-0.5">{asset.serialNumber}</div>
+                    </td>
+                    <td className="text-xs text-gray-600">{asset.category}</td>
+                    <td className="text-xs text-gray-500">{asset.location}</td>
+                    <td>{getConditionBadge(asset.condition)}</td>
+                    <td>{getStatusBadge(asset.status)}</td>
+                    <td className="text-right">
+                      <button
+                        onClick={() => setSelectedAsset(asset)}
+                        className="btn-secondary text-xs gap-1.5 ml-auto"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -212,143 +180,119 @@ export const AssetRegistryView: React.FC = () => {
         </div>
       </div>
 
-      {/* ASSET DETAIL MODAL */}
+      {/* Asset Detail Modal */}
       {selectedAsset && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-2xl w-full border border-gray-200 shadow-xl overflow-hidden animate-slide-in flex flex-col max-h-[85vh]">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-150 flex justify-between items-center bg-gray-50/50 shrink-0">
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-panel w-full max-w-2xl">
+            {/* Header */}
+            <div className="px-6 py-4 flex items-start justify-between"
+              style={{ borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(135deg, #f0fdf4, #ecfdf8)' }}>
               <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{selectedAsset.tag}</span>
-                <h3 className="font-bold text-gray-900 text-sm">{selectedAsset.name}</h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
+                  style={{ background: '#ecfdf8', color: '#167C65', fontFamily: 'monospace' }}>
+                  {selectedAsset.tag}
+                </span>
+                <h3 className="font-bold text-gray-900 text-base mt-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  {selectedAsset.name}
+                </h3>
               </div>
-              <button 
-                onClick={() => setSelectedAsset(null)}
-                className="text-gray-400 hover:text-gray-600 text-xs font-bold p-1 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-6 overflow-y-auto grow">
-              {/* Asset Metadata Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-50/40 p-4 rounded-xl border border-gray-150">
-                <div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Status</span>
-                  <span className="mt-1 block">{getStatusBadge(selectedAsset.status)}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Category</span>
-                  <span className="text-xs font-bold text-gray-900 mt-1 block">{selectedAsset.category}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Condition</span>
-                  <span className="text-xs font-semibold text-gray-800 mt-1 block">{selectedAsset.condition}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Acquisition Date</span>
-                  <span className="text-xs font-bold text-gray-900 mt-1 block">{selectedAsset.acquisitionDate}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Serial Number</span>
-                  <span className="text-xs font-mono text-gray-800 mt-1 block">{selectedAsset.serialNumber}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Location</span>
-                  <span className="text-xs font-bold text-gray-900 mt-1 block">{selectedAsset.location}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Current Holder</span>
-                  <span className="text-xs font-bold text-[#167C65] mt-1 block">
-                    {selectedAsset.currentHolderName ? `${selectedAsset.currentHolderName}` : 'In Storage / Available'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Tabs for Histories */}
-              <div className="space-y-4">
-                {/* Allocation History */}
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 mb-2 pb-1 border-b border-gray-100">
-                    <ClipboardCheck className="w-4 h-4 text-emerald-600" />
-                    Allocation History
-                  </h4>
-                  {selectedAsset.allocationHistory.length === 0 ? (
-                    <p className="text-[11px] text-gray-400 italic pl-1">No allocation history recorded.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                      {selectedAsset.allocationHistory.map(rec => (
-                        <div key={rec.id} className="p-2.5 bg-white border border-gray-150 rounded-xl flex justify-between items-center text-xs">
-                          <div>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider mr-2 ${
-                              rec.action === 'Allocated' ? 'bg-blue-50 text-blue-600' : rec.action === 'Transferred' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {rec.action}
-                            </span>
-                            <span className="text-gray-700">Holder: <span className="font-bold">{rec.userName}</span></span>
-                            {rec.notes && <p className="text-[10px] text-gray-400 font-medium mt-1 leading-normal">Note: {rec.notes}</p>}
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-semibold">{rec.date}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Maintenance History */}
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 mb-2 pb-1 border-b border-gray-100">
-                    <Wrench className="w-4 h-4 text-amber-500" />
-                    Maintenance Tickets
-                  </h4>
-                  {selectedAsset.maintenanceHistory.length === 0 ? (
-                    <p className="text-[11px] text-gray-400 italic pl-1">No maintenance tickets created.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                      {selectedAsset.maintenanceHistory.map(ticket => (
-                        <div key={ticket.id} className="p-2.5 bg-white border border-gray-150 rounded-xl flex justify-between items-start text-xs gap-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
-                                ticket.status === 'Resolved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                              }`}>
-                                {ticket.status}
-                              </span>
-                              <span className="text-[10px] font-bold text-rose-500 uppercase">{ticket.priority} PRIORITY</span>
-                            </div>
-                            <p className="text-gray-700 font-medium leading-normal">{ticket.issueDescription}</p>
-                            {ticket.assignedTechnician && (
-                              <p className="text-[10px] text-gray-500 leading-none">Technician: <span className="font-bold">{ticket.assignedTechnician}</span></p>
-                            )}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-[10px] text-gray-400 font-semibold block">{ticket.dateRaised}</span>
-                            {ticket.dateResolved && (
-                              <span className="text-[9px] text-emerald-600 font-semibold block mt-0.5">Resolved: {ticket.dateResolved}</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              <div className="flex items-center gap-3">
+                {getStatusBadge(selectedAsset.status)}
+                <button onClick={() => setSelectedAsset(null)}
+                  className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-150 bg-gray-50/50 flex justify-end shrink-0">
-              <button
-                onClick={() => setSelectedAsset(null)}
-                className="bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer"
-              >
-                Close Details
-              </button>
+            {/* Body */}
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {/* Meta Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl"
+                style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                {[
+                  { label: 'Category', value: selectedAsset.category },
+                  { label: 'Condition', value: selectedAsset.condition },
+                  { label: 'Acquired', value: selectedAsset.acquisitionDate },
+                  { label: 'Location', value: selectedAsset.location },
+                  { label: 'Serial No.', value: selectedAsset.serialNumber },
+                  { label: 'Current Holder', value: selectedAsset.currentHolderName || 'Available / In Storage' },
+                ].map(item => (
+                  <div key={item.label}>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">{item.label}</span>
+                    <span className="text-xs font-bold text-gray-800 mt-0.5 block"
+                      style={item.label === 'Serial No.' ? { fontFamily: 'monospace' } : {}}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Allocation History */}
+              <div>
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2"
+                  style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <ClipboardCheck className="w-4 h-4 text-green-500" /> Allocation History
+                </h4>
+                {selectedAsset.allocationHistory.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">No allocation history recorded.</p>
+                ) : (
+                  <div className="space-y-2 max-h-36 overflow-y-auto">
+                    {selectedAsset.allocationHistory.map(rec => (
+                      <div key={rec.id} className="flex items-center justify-between p-2.5 rounded-xl text-xs"
+                        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <div className="flex items-center gap-2">
+                          <span className={`badge ${rec.action === 'Allocated' ? 'badge-allocated' : rec.action === 'Transferred' ? 'badge-reserved' : 'badge-neutral-pill'}`}>
+                            {rec.action}
+                          </span>
+                          <span className="text-gray-700">→ <span className="font-bold">{rec.userName}</span></span>
+                        </div>
+                        <span className="text-[10px] text-gray-400">{rec.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Maintenance History */}
+              <div>
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2"
+                  style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <Wrench className="w-4 h-4 text-amber-500" /> Maintenance Tickets
+                </h4>
+                {selectedAsset.maintenanceHistory.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">No maintenance tickets created.</p>
+                ) : (
+                  <div className="space-y-2 max-h-36 overflow-y-auto">
+                    {selectedAsset.maintenanceHistory.map(ticket => (
+                      <div key={ticket.id} className="p-2.5 rounded-xl flex justify-between items-start gap-3 text-xs"
+                        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`badge priority-${ticket.priority.toLowerCase()}`}>{ticket.priority}</span>
+                            <span className={`badge ${ticket.status === 'Resolved' ? 'badge-success-pill' : 'badge-warning-pill'}`}>{ticket.status}</span>
+                          </div>
+                          <p className="text-gray-700 font-medium">{ticket.issueDescription}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-gray-400 block">{ticket.dateRaised}</span>
+                          {ticket.dateResolved && <span className="text-[9px] text-green-600 font-semibold block">✓ {ticket.dateResolved}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 flex justify-end"
+              style={{ borderTop: '1px solid #f1f5f9', background: '#f8fafc' }}>
+              <button onClick={() => setSelectedAsset(null)} className="btn-primary">Close Details</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

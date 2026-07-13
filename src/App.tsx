@@ -23,55 +23,39 @@ const AppContent: React.FC = () => {
 
   // Unauthenticated routing
   if (!currentUser) {
-    if (currentPage === 'Signup') {
-      return <SignupView />;
-    }
+    if (currentPage === 'Signup') return <SignupView />;
     return <LoginView />;
   }
 
-  // Active page rendering
   const renderActiveView = () => {
     switch (currentPage) {
-      case 'Dashboard':
-        return <DashboardView />;
-      case 'AssetRegistry':
-        return <AssetRegistryView />;
-      case 'AllocationTransfer':
-        return <AllocationTransferView />;
-      case 'ResourceBooking':
-        return <ResourceBookingView />;
-      case 'Maintenance':
-        return <MaintenanceView />;
-      case 'AssetAudit':
-        return <AssetAuditView />;
-      case 'Reports':
-        return <ReportsView />;
-      case 'ActivityNotifications':
-        return <ActivityNotificationsView />;
-      case 'OrgSetup':
-        return <OrgSetupView />;
-      default:
-        return <DashboardView />;
+      case 'Dashboard':              return <DashboardView />;
+      case 'AssetRegistry':          return <AssetRegistryView />;
+      case 'AllocationTransfer':     return <AllocationTransferView />;
+      case 'ResourceBooking':        return <ResourceBookingView />;
+      case 'Maintenance':            return <MaintenanceView />;
+      case 'AssetAudit':             return <AssetAuditView />;
+      case 'Reports':                return <ReportsView />;
+      case 'ActivityNotifications':  return <ActivityNotificationsView />;
+      case 'OrgSetup':               return <OrgSetupView />;
+      default:                       return <DashboardView />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Layout */}
+    <div className="min-h-screen flex" style={{ background: 'var(--color-background)' }}>
+      {/* Sidebar */}
       <Sidebar isOpen={mobileSidebarOpen} setIsOpen={setMobileSidebarOpen} />
 
-      {/* Main Panel Shell */}
+      {/* Main */}
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-        {/* Navigation Bar Header */}
         <Navbar onMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
-        {/* Content Wrapper */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto animate-fade-in">
           {renderActiveView()}
         </main>
       </div>
 
-      {/* Interactive global alerts container */}
       <ToastContainer />
     </div>
   );

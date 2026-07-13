@@ -1,185 +1,181 @@
 import React, { useState } from 'react';
 import { useAppState } from '../context/AppStateContext';
+import { Eye, EyeOff, Zap } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
   const { login, users, setCurrentPage } = useAppState();
   const [email, setEmail] = useState('priya.sharma@assetflow.com');
   const [password, setPassword] = useState('password');
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 500));
     const success = login(email);
     if (!success) {
-      setError('Invalid email address. Please select a demo user or enter a registered email.');
+      setError('Invalid email. Use a demo account below or a registered email.');
     }
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-[#14161a] relative overflow-hidden">
-      <div className="absolute top-[-220px] right-[-160px] w-[640px] h-[640px] rounded-full blur-[120px] bg-[radial-gradient(circle,_rgba(58,129,245,0.16),_transparent_70%)]" />
-      <div className="absolute bottom-[-260px] left-[-180px] w-[520px] h-[520px] rounded-full blur-[120px] bg-[radial-gradient(circle,_rgba(47,91,255,0.10),_transparent_70%)]" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #050f0e 0%, #0a2420 35%, #0f3830 60%, #167C65 100%)' }}>
+      
+      {/* Decorative glowing orbs */}
+      <div className="absolute top-[-120px] right-[-80px] w-[480px] h-[480px] rounded-full opacity-20"
+        style={{ background: 'radial-gradient(circle, #167C65 0%, transparent 70%)' }} />
+      <div className="absolute bottom-[-100px] left-[-60px] w-[360px] h-[360px] rounded-full opacity-15"
+        style={{ background: 'radial-gradient(circle, #34d399 0%, transparent 70%)' }} />
+      <div className="absolute top-[40%] left-[20%] w-[200px] h-[200px] rounded-full opacity-10"
+        style={{ background: 'radial-gradient(circle, #10b981 0%, transparent 70%)' }} />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 lg:px-12">
-        <div className="flex items-center gap-3 font-semibold text-lg tracking-[-0.01em]">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3a81f5] to-[#0031fe] shadow-[0_4px_16px_rgba(47,91,255,0.45)]">
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
-              <path d="M4 12L10 6L14 10L20 4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 4H20V10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          AssetFlow
-        </div>
-        <div className="hidden items-center gap-7 text-sm font-medium text-[#5b5f68] md:flex">
-          <a href="#" className="transition hover:text-[#14161a]">Home</a>
-          <a href="#" className="transition hover:text-[#14161a]">Features</a>
-          <a href="#" className="transition hover:text-[#14161a]">About</a>
-          <a href="#" className="transition hover:text-[#14161a]">Contact</a>
-        </div>
-      </header>
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 opacity-5"
+        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
-      <main className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 py-8 lg:px-12 lg:py-10 xl:flex-row xl:items-center xl:gap-14 xl:py-14">
-        <section className="max-w-2xl pb-10 xl:pb-0">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#dfe6f7] bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#3a81f5] shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-[#3a81f5] shadow-[0_0_0_3px_rgba(58,129,245,0.25)]" />
-            Now tracking 40,000+ assets live
-          </div>
-          <h1 className="text-4xl font-extrabold leading-[1.05] tracking-[-0.02em] text-[#14161a] sm:text-5xl lg:text-6xl">
-            Manage Every Asset with{' '}
-            <span className="bg-gradient-to-r from-[#3a81f5] via-[#8fb3ff] to-[#3a81f5] bg-clip-text text-transparent">
-              Total Confidence
-            </span>
-          </h1>
-          <p className="mt-5 max-w-xl text-lg leading-8 text-[#5b5f68]">
-            Track assets in real time, automate maintenance, and give every team a single source of truth from one polished ERP experience.
-          </p>
+      <div className="relative z-10 w-full max-w-[420px] animate-slide-up">
+        {/* Card */}
+        <div className="glass rounded-2xl p-8 space-y-6"
+          style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.12) inset' }}>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => login(email)}
-              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#3a81f5] to-[#0031fe] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(47,91,255,0.4)] transition hover:-translate-y-0.5"
-            >
-              Continue to Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('Signup')}
-              className="inline-flex items-center justify-center rounded-full border border-[#d7dce6] bg-white px-6 py-3 text-sm font-semibold text-[#14161a] transition hover:bg-[#f4f6fb]"
-            >
-              Create Account
-            </button>
-          </div>
-
-          <div className="mt-10 border-t border-[#e4e7ef] pt-6">
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#8c8f97]">
-              Trusted by 500+ organizations worldwide
-            </p>
-            <div className="flex flex-wrap gap-5 text-sm font-semibold text-[#5b5f68]">
-              <span>Nordholm</span>
-              <span>Vantage Rail</span>
-              <span>Circa</span>
-              <span>Portside Logistics</span>
-              <span>Ferrow</span>
+          {/* Brand */}
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mx-auto"
+              style={{ background: 'linear-gradient(135deg, #167C65 0%, #0e5a4a 100%)', boxShadow: '0 8px 24px rgba(22,124,101,0.45)' }}>
+              <Zap className="w-7 h-7 text-white" />
             </div>
-          </div>
-        </section>
-
-        <div className="w-full max-w-xl rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_60px_rgba(20,22,26,0.14)] backdrop-blur md:p-8">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3a81f5] to-[#0031fe] text-2xl font-extrabold text-white shadow-md">
-              A
-            </div>
-            <h2 className="text-2xl font-bold text-[#14161a]">Welcome back</h2>
-            <p className="mt-2 text-sm text-[#5b5f68]">Sign in to access the AssetFlow dashboard.</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-600">
-                {error}
-              </div>
-            )}
-
             <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b6e73]">
-                Email Address
-              </label>
+              <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                AssetFlow
+              </h1>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">Enterprise Asset & Resource Management</p>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="p-3 rounded-xl text-xs font-semibold text-red-700 animate-slide-up"
+              style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="input-label">Email Address</label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2.5 text-sm text-[#14161a] outline-none transition focus:border-[#3a81f5]"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <div className="mb-1 flex items-center justify-between">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b6e73]">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  className="text-[10px] font-bold text-[#3a81f5] hover:underline"
-                  onClick={() => alert('Forgot Password functionality is disabled for this demo.')}
-                >
+              <div className="flex justify-between items-center mb-1">
+                <label className="input-label" style={{ marginBottom: 0 }}>Password</label>
+                <button type="button" className="text-[10px] font-bold text-[#167C65] hover:underline"
+                  onClick={() => alert('Password reset is disabled in this demo.')}>
                   Forgot Password?
                 </button>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2.5 text-sm text-[#14161a] outline-none transition focus:border-[#3a81f5]"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-field pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-[#167C65] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#126351]"
+              disabled={loading}
+              className="btn-primary w-full justify-center py-2.5 text-sm"
+              style={{ opacity: loading ? 0.7 : 1 }}
             >
-              Sign In
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing in…
+                </span>
+              ) : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-6 border-t border-[#eef0f2] pt-4">
-            <div className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b6e73]">
-              Quick Demo Accounts
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {users.slice(0, 4).map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => {
-                    setEmail(u.email);
-                    login(u.email);
-                  }}
-                  className="rounded-lg border border-[#e5e7eb] bg-[#f7f8fa] px-3 py-2 text-left text-sm font-semibold text-[#14161a] transition hover:bg-[#f0f2f6]"
-                >
-                  {u.name}
-                  <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8c8f97]">
-                    {u.role}
-                  </span>
-                </button>
-              ))}
+            <div className="relative flex justify-center">
+              <span className="px-3 bg-white text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Quick demo login
+              </span>
             </div>
           </div>
 
-          <div className="mt-5 text-center text-sm text-[#5b5f68]">
-            Don’t have an account?{' '}
-            <button onClick={() => setCurrentPage('Signup')} className="font-bold text-[#167C65] hover:underline">
+          {/* Demo Users */}
+          <div className="grid grid-cols-2 gap-2">
+            {users.slice(0, 4).map((u, i) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => { setEmail(u.email); login(u.email); }}
+                className={`text-left p-2.5 rounded-xl border transition-all hover:scale-[1.02] cursor-pointer animate-slide-up stagger-${i + 1}`}
+                style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#167C65'; (e.currentTarget as HTMLElement).style.background = '#ecfdf8'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #167C65, #0e5a4a)' }}>
+                    {u.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-bold text-gray-800 truncate">{u.name}</div>
+                    <div className="text-[9px] font-semibold uppercase tracking-wide"
+                      style={{ color: u.role === 'Admin' ? '#e11d48' : u.role === 'Asset Manager' ? '#167C65' : u.role === 'Department Head' ? '#2563eb' : '#64748b' }}>
+                      {u.role}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Sign up link */}
+          <div className="text-center text-xs">
+            <span className="text-gray-500">Don't have an account? </span>
+            <button onClick={() => setCurrentPage('Signup')}
+              className="font-bold text-[#167C65] hover:underline">
               Sign Up
             </button>
           </div>
+
+          <p className="text-center text-[10px] text-gray-400 leading-relaxed border-t border-gray-100 pt-4">
+            Signups create Employee accounts only. Admins assign elevated roles.
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
